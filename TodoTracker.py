@@ -21,7 +21,7 @@ import sys
 import time
 
 # TODO Include a Read me for the application.
-
+# TODO Add functionality to notate file path when printing the file name.
 """ Preamble
 This software is intended to be a low overhead, simple, and pythonic method of searching for `# TODO' tags out of a
 software. Intended for Python, this software will also be able to search any file that has non-binary encoding.
