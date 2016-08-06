@@ -22,6 +22,7 @@ import time
 
 # TODO Include a Read me for the application.
 # TODO Add functionality to notate file path when printing the file name.
+# TODO TodoTracker is not skipping excluded paths.
 """ Preamble
 This software is intended to be a low overhead, simple, and pythonic method of searching for `# TODO' tags out of a
 software. Intended for Python, this software will also be able to search any file that has non-binary encoding.
@@ -41,7 +42,7 @@ Due to repeatedly opening and closing any file containing the file extensions pr
 large directories can take some time to accomplish, i.e searching `/' on a *NIX operating system,
 """
 
-version = 'V1.0'
+version = 'V1.01'
 versiondate = 'Thu Jul 28 13:31:11 2016'
 buildname = 'TodoTracker'
 versionstr = '%s %s (c) Eclectick Media Solutions, circa %s' % (buildname, version, versiondate)
@@ -109,35 +110,38 @@ with open('to.do', 'w+') as tf:
 
     for path, dirs, files in os.walk(parsed.path):  # Pylint auto lint's this as to complex
 
-        if exclude_path.count(path) > 0:
-            print("Skipped %s" % exclude_path[exclude_path.index(path)])
-        else:
+            good_path = True
+            for exclude_str in exclude_path:
+                if path.count(exclude_str) > 0:
+                        print("Skipped %s" % path)
+                        good_path = False
 
-            for file in files:
-                if exclude_files.count(file) > 0:
-                    print('Skipped %s' % file)
+            if good_path:
+                for file in files:
+                    if exclude_files.count(file) > 0:
+                        print('Skipped %s' % os.path.join(path, file))
 
-                elif exclude_extensions.count(file) > 0:
-                    print('Skipped %s' % file)
+                    elif exclude_extensions.count(file) > 0:
+                        print('Skipped %s' % os.path.join(path, file))
 
-                elif parsed.filetypes.split(',').count(file.split('.')[-1]) > 0 and not file.count('to.do') > 0:
-                    print_file = False
-                    output_queue = []
+                    elif parsed.filetypes.split(',').count(file.split('.')[-1]) > 0 and not file.count('to.do') > 0:
+                        print_file = False
+                        output_queue = []
 
-                    with open(os.path.join(path, file)) as f:
+                        with open(os.path.join(path, file)) as f:
 
-                        for i, line in enumerate(f):
-                            if line.count('# TODO') > 0:
-                                print_file = True
-                                output_queue.append('%s:%s' % (i + 1, line))
+                            for i, line in enumerate(f):
+                                if line.count('# TODO') > 0:
+                                    print_file = True
+                                    output_queue.append('%s:%s' % (i + 1, line))
 
-                    if print_file:
-                        output_queue.insert(0, '\n\n%s\n--------\n' % file)
-                        if not parsed.quiet:
-                            print('\n\n%s\n--------' % file)
-
-                        while len(output_queue) > 0:
-                            line = output_queue.pop(0)
-                            tf.write(line)
+                        if print_file:
+                            output_queue.insert(0, '\n\n%s\n--------\n' % os.path.join(path, file))
                             if not parsed.quiet:
-                                print(line.split('\n')[0])
+                                print('\n\n%s\n--------' % os.path.join(path, file))
+
+                            while len(output_queue) > 0:
+                                line = output_queue.pop(0)
+                                tf.write(line)
+                                if not parsed.quiet:
+                                    print(line.split('\n')[0])
