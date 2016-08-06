@@ -111,16 +111,19 @@ with open('to.do', 'w+') as tf:
             good_path = True
             for exclude_str in exclude_path:
                 if path.count(exclude_str) > 0:
+                    if not parsed.quiet:
                         print("Skipped %s" % path)
                         good_path = False
 
             if good_path:
                 for file in files:
                     if exclude_files.count(file) > 0:
-                        print('Skipped %s' % os.path.join(path, file))
+                        if not parsed.quiet:
+                            print('Skipped %s' % os.path.join(path, file))
 
                     elif exclude_extensions.count(file) > 0:
-                        print('Skipped %s' % os.path.join(path, file))
+                        if not parsed.quiet:
+                            print('Skipped %s' % os.path.join(path, file))
 
                     elif parsed.filetypes.split(',').count(file.split('.')[-1]) > 0 and not file.count('to.do') > 0:
                         print_file = False
