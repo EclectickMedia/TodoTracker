@@ -113,7 +113,7 @@ with open('to.do', 'w+') as tf:
                 if path.count(exclude_str) > 0:
                     if not parsed.quiet:
                         print("Skipped %s" % path)
-                        good_path = False
+                    good_path = False
 
             if good_path:
                 for file in files:
