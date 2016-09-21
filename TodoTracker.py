@@ -96,8 +96,8 @@ if parsed.filetypes is None:
     exit()
 
 if parsed.path is None:
-    sys.stderr.write('You must include a path to search! Use -h to view help.\n')
-    exit()
+    sys.stderr.write('Did not specify a path to iterate from, defaulting to the Current Working Directory')
+    parsed.path = './'
 
 # Main Loop
 with open('to.do', 'w+') as tf:
