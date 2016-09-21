@@ -40,7 +40,7 @@ Due to repeatedly opening and closing any file containing the file extensions pr
 large directories can take some time to accomplish, i.e searching `/' on a *NIX operating system,
 """
 
-version = 'V1.01.01'
+version = 'V1.01.02'
 versiondate = 'Wed Sep 21 05:06:28 2016'
 buildname = 'TodoTracker'
 versionstr = '%s %s (c) Eclectick Media Solutions, circa %s' % (buildname, version, versiondate)
@@ -96,7 +96,7 @@ if parsed.filetypes is None:
     exit()
 
 if parsed.path is None:
-    sys.stderr.write('Did not specify a path to iterate from, defaulting to the Current Working Directory')
+    print('Did not specify a path to iterate from, defaulting to the Current Working Directory')
     parsed.path = './'
 
 # Main Loop
