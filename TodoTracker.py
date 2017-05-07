@@ -2,18 +2,23 @@
 #
 # Copyright (c) 2016, Ariana Giroux (Eclectick Media Solutions)
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
-# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
-# permit persons to whom the Software is furnished to do so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
-# Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-# COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-# OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
 import os
 import argparse
@@ -22,52 +27,70 @@ import time
 
 # TODO Include a Read me for the application.
 """ Preamble
-This software is intended to be a low overhead, simple, and pythonic method of searching for `# TODO' tags out of a
-software. Intended for Python, this software will also be able to search any file that has non-binary encoding.
+This software is intended to be a low overhead, simple, and pythonic method of
+searching for `# TODO' tags out of a software. Intended for Python, this
+software will also be able to search any file that has non-binary encoding.
 
-This software requires a path to start the search in, and a series of file extensions (without the preceding `.')
-delimited by commas. When given these parameters, the software will walk (see os.walk()) through the directories
-presented by the search and finds `# TODO' tags in your software, then outputs them to the screen in a standardized,
-organized way, while discretely creating a `to.do' file as the results are found.
+This software requires a path to start the search in, and a series of file
+extensions (without the preceding `.') delimited by commas. When given these
+parameters, the software will walk (see os.walk()) through the directories
+presented by the search and finds `# TODO' tags in your software, then outputs
+them to the screen in a standardized, organized way, while discretely creating
+a `to.do' file as the results are found.
 
-This software rose due to a need for a simple software that can quickly, and cost effectively search for `# TODO' tags
-in private projects (for more information, see github.com/eclectickmedia) and amass them to a single location, in as
-easily digestible way as possible whilst still being accessible via a command line.
+This software rose due to a need for a simple software that can quickly, and
+cost effectively search for `# TODO' tags in private projects (for more
+information, see github.com/eclectickmedia) and amass them to a single
+location, in as easily digestible way as possible whilst still being accessible
+via a command line.
 """
 
 """ Technical Preamble
-Due to repeatedly opening and closing any file containing the file extensions provided being system intensive, using
-large directories can take some time to accomplish, i.e searching `/' on a *NIX operating system,
+Due to repeatedly opening and closing any file containing the file extensions
+provided being system intensive, using large directories can take some time to
+accomplish, i.e searching `/' on a *NIX operating system,
 """
 
 version = 'V1.01.02'
 versiondate = 'Wed Sep 21 05:06:28 2016'
 buildname = 'TodoTracker'
-versionstr = '%s %s (c) Eclectick Media Solutions, circa %s' % (buildname, version, versiondate)
+versionstr = '%s %s (c) Eclectick Media Solutions, circa %s' % (buildname,
+                                                                version,
+                                                                versiondate)
 
 """ Set up argument parsing. """
-parser = argparse.ArgumentParser(description='A simple application to update TODO\'s from a path. Requires the -p and \
-                                 -f flags.')
+parser = argparse.ArgumentParser(
+    description='A simple application to update TODO\'s from a path. Requires '
+                'the -p and -f flags.')
 
-parser.add_argument('-ee', '--exclude_extensions', help='Any file extensions excluding the \'.\' to exclude from the \
-                    search, separated by commas..', type=str)
+parser.add_argument('-ee', '--exclude_extensions',
+                    help='Any file extensions excluding the \'.\' to exclude '
+                         'from the search, separated by commas..', type=str)
 
-parser.add_argument('-ef', '--exclude_files', help='Flag this option to exclude specific filenames, separated by \
-                    by commas.', type=str)
+parser.add_argument('-ef', '--exclude_files',
+                    help='Flag this option to exclude specific file names, '
+                         'separated by by commas.', type=str)
 
-parser.add_argument('-ep', '--exclude_path', help='You can flag this option to exclude specific paths or folders. \
-                    Include folder paths by including strings like \"\'/path/to/fake/,/folder/\'\". With this \
-                    example, if the program comes across the path \'/path/to/fake\' or \'/folder\', it will just skip \
-                    the search of the path.', type=str)
+parser.add_argument('-ep', '--exclude_path',
+                    help='You can flag this option to exclude specific paths '
+                         'or folders. Include folder paths by including '
+                         'strings like \"\'/path/to/fake/,/folder/\'\". With '
+                         'this example, if the program comes across the path '
+                         '\'/path/to/fake\' or \'/folder\', it will just skip '
+                         'the search of the path.', type=str)
 
-parser.add_argument('-f', '--filetypes', help='The file extensions excluding the \'.\' to check for, separated by \
-                    commas.')
+parser.add_argument('-f', '--filetypes',
+                    help='The file extensions excluding the \'.\' to check '
+                         'for, separated by commas.')
 
 parser.add_argument('-p', '--path', help='The path to search for TODO lines.')
 
-parser.add_argument('-Q', '--quiet', help='Do not output \'# TODO\' items as they are found.', action='store_true')
+parser.add_argument('-Q', '--quiet',
+                    help='Do not output \'# TODO\' items as they are found.',
+                    action='store_true')
 
-parser.add_argument('-v', '--version', help='Display version.', action='store_true')
+parser.add_argument('-v', '--version', help='Display version.',
+                    action='store_true')
 
 parsed = parser.parse_args()  # Parse the above specified arguments.
 
@@ -92,21 +115,24 @@ else:
     exclude_path = ''
 
 if parsed.filetypes is None:
-    sys.stderr.write('You must include file types to search! Use -h to view help.\n')
+    sys.stderr.write('You must include file types to search! Use -h to view '
+                     'help.\n')
     exit()
 
 if parsed.path is None:
-    print('Did not specify a path to iterate from, defaulting to the Current Working Directory')
+    print('Did not specify a path to iterate from, defaulting to the Current '
+          'Working Directory')
     parsed.path = './'
 
 # Main Loop
 with open('to.do', 'w+') as tf:
     tf.write('TODO MASTER (%s)'
-             '                  *Generated by github.com/eclectickmedia/todotracker*\n--------\n' % time.ctime())
+             '                  *Generated by github.com/eclectickmedia/'
+             'todotracker*\n--------\n' % time.ctime())
     if not parsed.quiet:
         print('TODO MASTER\n\n--------\n\n')
 
-    for path, dirs, files in os.walk(parsed.path):  # Pylint auto lint's this as to complex
+    for path, dirs, files in os.walk(parsed.path):
 
             good_path = True
             for exclude_str in exclude_path:
@@ -125,7 +151,8 @@ with open('to.do', 'w+') as tf:
                         if not parsed.quiet:
                             print('Skipped %s' % os.path.join(path, file))
 
-                    elif parsed.filetypes.split(',').count(file.split('.')[-1]) > 0 and not file.count('to.do') > 0:
+                    elif parsed.filetypes.split(',').count(file.split('.')[-1])\
+                            > 0 and not file.count('to.do') > 0:
                         print_file = False
                         output_queue = []
 
@@ -137,9 +164,11 @@ with open('to.do', 'w+') as tf:
                                     output_queue.append('%s:%s' % (i + 1, line))
 
                         if print_file:
-                            output_queue.insert(0, '\n\n%s\n\n--------\n\n' % os.path.join(path, file))
+                            output_queue.insert(0, '\n\n%s\n\n--------\n\n'
+                                                % os.path.join(path, file))
                             if not parsed.quiet:
-                                print('\n\n%s\n\n--------\n\n' % os.path.join(path, file))
+                                print('\n\n%s\n\n--------\n\n'
+                                      % os.path.join(path, file))
 
                             while len(output_queue) > 0:
                                 line = output_queue.pop(0)
