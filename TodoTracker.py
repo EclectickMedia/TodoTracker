@@ -2,8 +2,11 @@ import argparse
 import os
 import time
 import io
-
 import sys
+
+from tkinter import *
+from tkinter import ttk
+from tkinter import filedialog
 
 version = 'V1.01.02'
 versiondate = 'Wed Sep 21 05:06:28 2016'
@@ -98,6 +101,32 @@ class Searcher:
 
         return True
 
+
+class main:
+    def __init__(self, root):
+        self.root = root
+        self.path = None
+        self.file_types = []
+        self.exclude = {}
+
+        path_frame = ttk.Frame()
+        path_frame.pack()
+        self.path_text = StringVar()
+        self.path_text.set(os.getcwd())
+        self.path_label = Label(path_frame, text=self.path_text.get())
+        self.path_label.grid(column=1, row=0)
+        Button(path_frame, text='Browse',
+               command=lambda: self.get_path()).grid(column=0, row=0)
+
+        exclude_frame = ttk.Frame()
+        exclude_frame.pack()
+
+    def get_path(self):
+        self.path_text.set(filedialog.askdirectory())
+        print(self.path_text.get())
+
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='A simple application to update TODO\'s from a path. '
@@ -175,5 +204,9 @@ if __name__ == '__main__':
         else:
             raise RuntimeError('Could not access the path created.')
 
-    Searcher(path, filetypes, exclude_extensions, exclude_files,
-             exclude_path, parsed.quiet).write_file('to.do')
+    # Searcher(path, filetypes, exclude_extensions, exclude_files,
+    #          exclude_path, parsed.quiet).write_file('to.do')
+
+    root = Tk()
+    main(root)
+    root.mainloop()
