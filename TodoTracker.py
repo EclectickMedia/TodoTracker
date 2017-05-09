@@ -3,7 +3,9 @@ import os
 import time
 import io
 
-import sys
+from tkinter import *
+from tkinter import ttk
+from tkinter import filedialog
 
 version = 'V1.01.02'
 versiondate = 'Wed Sep 21 05:06:28 2016'
@@ -77,11 +79,15 @@ class Searcher:
         has_todo = False
         temp_log = io.StringIO()
         if os.access(os.path.join(path, file), os.F_OK):
-            with open(os.path.join(path, file)) as infile:
-                for i, line in enumerate(infile):
-                    if line.count('# TODO'):
-                        temp_log.write('%s:%s' % (i, line))
-                        has_todo = True
+            try:
+                with open(os.path.join(path, file)) as infile:
+                    for i, line in enumerate(infile):
+                        if line.count('# TODO'):
+                            temp_log.write('%s:%s' % (i, line))
+                            has_todo = True
+            except UnicodeDecodeError as e:
+                pass
+
             if has_todo:
                 self.log.write('\n\n%s\n\n--------\n\n' % os.path.join(path,
                                                                        file))
@@ -96,7 +102,89 @@ class Searcher:
         with open(outpath, 'w+') as outfile:
             outfile.write(self.log.getvalue())
 
-        return True
+        return self.log
+
+
+class main:
+    def __init__(self, root):
+        self.root = root
+        self.path = None
+        self.file_types = []
+        self.exclude = {}
+
+        path_and_types_frame = ttk.Frame()
+        path_and_types_frame.pack()
+        self.path_text = StringVar()
+        self.path_text.set(os.getcwd())
+        Button(path_and_types_frame, text='Select Path',
+               command=lambda:
+               self.path_text.set(filedialog.askdirectory())).grid(column=0,
+                                                                   row=0)
+
+        self.path_label = Label(path_and_types_frame,
+                                textvariable=self.path_text)
+        self.path_label.grid(column=1, row=0)
+        Label(path_and_types_frame,
+              text='File types, seperated by commas:').grid(row=1, column=0)
+        self.types_entry = Entry(path_and_types_frame)
+        self.types_entry.grid(row=1, column=1)
+
+        exclude_frame = ttk.Frame()
+        exclude_frame.pack()
+        Label(exclude_frame, text='To exclude various files, file types, and '
+                                  'paths, include each entry separated by '
+                                  'commas.').grid(row=0, columnspan=2,
+                                                  pady=(20, 10))
+
+        Label(exclude_frame,
+              text='Extensions to exclude, seperated by commas:').grid(row=1,
+                                                                       column=0)
+        self.extensions_input = Entry(exclude_frame)
+        self.extensions_input.grid(row=1, column=1)
+
+        Label(exclude_frame,
+              text='File names to exclude, seperated by commas:').grid(row=2,
+                                                                       column=0)
+        self.files_input = Entry(exclude_frame)
+        self.files_input.grid(row=2, column=1)
+
+        Label(exclude_frame,
+              text='Paths to exclude, seperated by commas:').grid(row=3,
+                                                                  column=0)
+        self.paths_input = Entry(exclude_frame)
+        self.paths_input.grid(row=3, column=1)
+
+        Button(root, text='Specify output folder and run search...',
+               command=lambda:
+               self._run_search(filedialog.askdirectory())).pack(pady=(20, 10))
+
+    def _run_search(self, outpath):
+        if self.types_entry.get() == '':
+            raise RuntimeError('Must specify at least one file type')
+
+        if self.extensions_input.get() == '':
+            extensions = []
+        else:
+            extensions = list(self.extensions_input.get().split(','))
+
+        if self.files_input == '':
+            files = []
+        else:
+            files = list(self.files_input.get().split(','))
+
+        if self.paths_input.get() == '':
+            paths = []
+        else:
+            paths = list(self.paths_input.get().split(','))
+
+        popup = Toplevel(root)
+
+        Label(popup, text=Searcher(self.path_text.get(),
+                                   list(self.types_entry.get().split(',')),
+                                   extensions, files, paths,
+                                   True).write_file(
+            os.path.join(outpath, 'to.do')).getvalue(), justify=LEFT).pack()
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -135,45 +223,51 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--version', help='Display version.',
                         action='store_true')
 
+    parser.add_argument('-c', '--cli', help='Use this flag to launch a UI, '
+                                            'ignores all other options.',
+                        action='store_true')
+
     parsed = parser.parse_args()  # Parse the above specified arguments.
 
     if parsed.version:
         print(versionstr)
         exit()
 
-    if parsed.exclude_extensions is not None:
-        exclude_extensions = list(parsed.exclude_extensions.split(','))
-    else:
-        exclude_extensions = []
-
-    if parsed.exclude_files is not None:
-        exclude_files = list(parsed.exclude_files.split(','))
-    else:
-        exclude_files = []
-
-    if parsed.exclude_path is not None:
-        exclude_path = list(parsed.exclude_path.split(','))
-    else:
-        exclude_path = []
-
-    if parsed.filetypes is None:
-        sys.stderr.write(
-            'You must include file types to search! Use -h to view '
-            'help.\n')
-        raise RuntimeError('No filetypes specified.')
-    else:
-        filetypes = list(parsed.filetypes.split(','))
-
-    if parsed.path is None:
-        print(
-            'Did not specify a path to iterate from, defaulting to the Current '
-            'Working Directory')
-        path = './'
-    else:
-        if os.access(parsed.path, os.F_OK):
-            path = parsed.path
+    if parsed.cli:
+        if parsed.exclude_extensions is not None:
+            exclude_extensions = list(parsed.exclude_extensions.split(','))
         else:
-            raise RuntimeError('Could not access the path created.')
+            exclude_extensions = []
 
-    Searcher(path, filetypes, exclude_extensions, exclude_files,
-             exclude_path, parsed.quiet).write_file('to.do')
+        if parsed.exclude_files is not None:
+            exclude_files = list(parsed.exclude_files.split(','))
+        else:
+            exclude_files = []
+
+        if parsed.exclude_path is not None:
+            exclude_path = list(parsed.exclude_path.split(','))
+        else:
+            exclude_path = []
+
+        if parsed.filetypes is None:
+            sys.stderr.write(
+                'You must include file types to search! Use -h to view '
+                'help.\n')
+            raise RuntimeError('No filetypes specified.')
+        else:
+            filetypes = list(parsed.filetypes.split(','))
+
+        if parsed.path is None:
+            path = './'
+        else:
+            if os.access(parsed.path, os.F_OK):
+                path = parsed.path
+            else:
+                raise RuntimeError('Could not access the path created.')
+
+        Searcher(path, filetypes, exclude_extensions, exclude_files,
+                 exclude_path, parsed.quiet)
+    else:
+        root = Tk()
+        main(root)
+        root.mainloop()
