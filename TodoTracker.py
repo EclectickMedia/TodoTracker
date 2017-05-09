@@ -7,8 +7,8 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
 
-version = 'V2.00'
-versiondate = 'Tue May  9 02:48:41 2017'
+version = 'V2.00.01'
+versiondate = 'Tue May  9 03:01:10 2017'
 buildname = 'TodoTracker'
 versionstr = '%s %s (c) Eclectick Media Solutions, circa %s' % (buildname,
                                                                 version,
@@ -116,7 +116,7 @@ class main:
         path_and_types_frame.pack()
         self.path_text = StringVar()
         self.path_text.set(os.getcwd())
-        Button(path_and_types_frame, text='Select Path',
+        Button(path_and_types_frame, text='Select Search Path',
                command=lambda:
                self.path_text.set(filedialog.askdirectory())).grid(column=0,
                                                                    row=0)
@@ -223,8 +223,10 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--version', help='Display version.',
                         action='store_true')
 
-    parser.add_argument('-c', '--cli', help='Use this flag to launch a UI, '
-                                            'ignores all other options.',
+    parser.add_argument('-c', '--cli', help='Use this flag to skip launching '
+                                            'the applet. Use this flag in '
+                                            'conjunction with other flags to '
+                                            'enable CLI support.',
                         action='store_true')
 
     parsed = parser.parse_args()  # Parse the above specified arguments.
