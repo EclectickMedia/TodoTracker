@@ -7,8 +7,8 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
 
-version = 'V1.01.02'
-versiondate = 'Wed Sep 21 05:06:28 2016'
+version = 'V2.00'
+versiondate = 'Tue May  9 02:48:41 2017'
 buildname = 'TodoTracker'
 versionstr = '%s %s (c) Eclectick Media Solutions, circa %s' % (buildname,
                                                                 version,
