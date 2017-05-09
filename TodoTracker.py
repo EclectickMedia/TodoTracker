@@ -223,8 +223,9 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--version', help='Display version.',
                         action='store_true')
 
-    parser.add_argument('-a', '--app', help='Use this flag to launch a UI, '
-                                            'ignores all other options.')
+    parser.add_argument('-c', '--cli', help='Use this flag to launch a UI, '
+                                            'ignores all other options.',
+                        action='store_true')
 
     parsed = parser.parse_args()  # Parse the above specified arguments.
 
@@ -232,41 +233,41 @@ if __name__ == '__main__':
         print(versionstr)
         exit()
 
-    if parsed.exclude_extensions is not None:
-        exclude_extensions = list(parsed.exclude_extensions.split(','))
-    else:
-        exclude_extensions = []
-
-    if parsed.exclude_files is not None:
-        exclude_files = list(parsed.exclude_files.split(','))
-    else:
-        exclude_files = []
-
-    if parsed.exclude_path is not None:
-        exclude_path = list(parsed.exclude_path.split(','))
-    else:
-        exclude_path = []
-
-    if parsed.filetypes is None:
-        sys.stderr.write(
-            'You must include file types to search! Use -h to view '
-            'help.\n')
-        raise RuntimeError('No filetypes specified.')
-    else:
-        filetypes = list(parsed.filetypes.split(','))
-
-    if parsed.path is None:
-        path = './'
-    else:
-        if os.access(parsed.path, os.F_OK):
-            path = parsed.path
+    if parsed.cli:
+        if parsed.exclude_extensions is not None:
+            exclude_extensions = list(parsed.exclude_extensions.split(','))
         else:
-            raise RuntimeError('Could not access the path created.')
+            exclude_extensions = []
 
-    if parsed.app:
+        if parsed.exclude_files is not None:
+            exclude_files = list(parsed.exclude_files.split(','))
+        else:
+            exclude_files = []
+
+        if parsed.exclude_path is not None:
+            exclude_path = list(parsed.exclude_path.split(','))
+        else:
+            exclude_path = []
+
+        if parsed.filetypes is None:
+            sys.stderr.write(
+                'You must include file types to search! Use -h to view '
+                'help.\n')
+            raise RuntimeError('No filetypes specified.')
+        else:
+            filetypes = list(parsed.filetypes.split(','))
+
+        if parsed.path is None:
+            path = './'
+        else:
+            if os.access(parsed.path, os.F_OK):
+                path = parsed.path
+            else:
+                raise RuntimeError('Could not access the path created.')
+
+        Searcher(path, filetypes, exclude_extensions, exclude_files,
+                 exclude_path, parsed.quiet)
+    else:
         root = Tk()
         main(root)
         root.mainloop()
-    else:
-        Searcher(path, filetypes, exclude_extensions, exclude_files,
-                 exclude_path, parsed.quiet)
