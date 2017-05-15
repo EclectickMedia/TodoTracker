@@ -8,8 +8,8 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
 
-version = 'V2.00.01'
-versiondate = 'Tue May  9 03:01:10 2017'
+version = 'V2.00.03'
+versiondate = 'Mon May 15 04:10:18 2017'
 buildname = 'TodoTracker'
 versionstr = '%s %s (c) Eclectick Media Solutions, circa %s' % (buildname,
                                                                 version,
@@ -45,14 +45,6 @@ class Searcher:
         if not self.quiet:
             print(self.log.getvalue())
 
-    def _validate_path(self, path):
-        for epath in self.exclude['paths']:
-            if path.count(epath):
-                logger.debug('%s in %s, skip' % (epath, path))
-                return False
-
-            return True
-
     def _validate_file(self, file):
             for efile in self.exclude['files']:
                 if file.count(efile):
@@ -73,19 +65,17 @@ class Searcher:
                 return False
 
     def _search_path(self):
-        for path, dirs, files in os.walk(self.path):
-            logger.debug('start search %s' % path)
-            if not self._validate_path(path):
-                pass
-            else:
-                logger.debug('parse files in %s' % path)
-                for file in files:
-                    logger.debug('validate and parse %s' %
-                                 os.path.join(path, file))
-                    if not self._validate_file(file):
-                        pass
-                    else:
-                        self._parse_file(path, file)
+        logger.debug('start search %s' % self.path)
+        for path, dirs, files in os.walk(self.path, topdown=True):
+            [dirs.remove(d) for d in list(dirs) if d in self.exclude['paths']]
+            logger.debug('parse files in %s' % path)
+            for file in files:
+                logger.debug('validate and parse %s' %
+                             os.path.join(path, file))
+                if not self._validate_file(file):
+                    pass
+                else:
+                    self._parse_file(path, file)
 
     def _parse_file(self, path, file):
         has_todo = False
@@ -96,9 +86,8 @@ class Searcher:
                     for i, line in enumerate(infile):
                         if line.count('# TODO'):
                             temp_log.write('%s:%s' % (i, line))
-                            logger.debug('%s:%s' % (i, line))
+                            logger.debug('%s:%s' % (i, line.strip('\n')))
                             has_todo = True
-                            logger.debug('has_todo')
             except UnicodeDecodeError as e:
                 logger.debug('%s throws UnicodeDecodeError')
 
