@@ -175,7 +175,7 @@ class main:
         else:
             extensions = list(self.extensions_input.get().split(','))
 
-        if self.files_input == '':
+        if self.files_input.get() == '':
             files = []
         else:
             files = list(self.files_input.get().split(','))
