@@ -111,6 +111,10 @@ pyvenv.cfg
 .venv
 pip-selfcheck.json
 
+# Vim stuff
+*.sw*
+.vimrc
+
 # python.logging stuff
 *.log
 *.log.[0-9]
