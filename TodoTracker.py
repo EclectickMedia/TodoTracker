@@ -33,7 +33,7 @@ class Searcher:
             'files': files,
             'paths': epaths
         }
-        self.regex = regex
+        self.regex = re.compile(regex)
         self.quiet = quiet
         self.log = io.StringIO()
         self.log.write('TODO MASTER (%s)'
@@ -77,16 +77,16 @@ class Searcher:
                 if not self._validate_file(file):
                     pass
                 else:
-                    self._parse_file(path, file, self.regex)
+                    self._parse_file(path, file)
 
-    def _parse_file(self, path, file, pattern=r'(?i).*# TODO.*'):
+    def _parse_file(self, path, file):
         has_todo = False
         temp_log = io.StringIO()
         if os.access(os.path.join(path, file), os.F_OK):
             try:
                 with open(os.path.join(path, file)) as infile:
                     for i, line in enumerate(infile):
-                        if re.search(pattern, line):
+                        if self.regex.search(line):
                             temp_log.write('%s:%s' % (i, line))
                             logger.debug('%s:%s' % (i, line.strip('\n')))
                             has_todo = True
