@@ -11,7 +11,9 @@ py2exe usage:
 try:
 
     from distutils.core import setup
-    import py2exe, sys, TodoTracker
+    import py2exe  # used by py2app
+    import sys
+    import TodoTracker
 
     sys.argv.append('py2exe')
 
@@ -44,7 +46,7 @@ except ImportError:
     import TodoTracker
 
     APP = ['TodoTracker.py']
-    DATA_FILES = []
+    DATA_FILES = ['logs']
     OPTIONS = {}
 
     setup(
