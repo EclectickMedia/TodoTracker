@@ -3,6 +3,7 @@ import os
 import time
 import io
 from log import logger
+import re
 
 from tkinter import *
 from tkinter import ttk
@@ -18,7 +19,7 @@ versionstr = '%s %s (c) Eclectick Media Solutions, circa %s' % (buildname,
 
 class Searcher:
     def __init__(self, path, types, extensions=list(), files=list(),
-                 epaths=list(), quiet=False):
+                 epaths=list(), regex=r'(?!).*# TODO.*', quiet=False):
         if not os.access(path, os.F_OK):
             raise OSError('Could not access search path')
 
@@ -32,6 +33,7 @@ class Searcher:
             'files': files,
             'paths': epaths
         }
+        self.regex = regex
         self.quiet = quiet
         self.log = io.StringIO()
         self.log.write('TODO MASTER (%s)'
@@ -46,23 +48,23 @@ class Searcher:
             print(self.log.getvalue())
 
     def _validate_file(self, file):
-            for efile in self.exclude['files']:
-                if file.count(efile):
-                    logger.debug('%s in %s, False' % (efile, file))
-                    return False
-
-            for ext in self.exclude['extensions']:
-                if file.count(ext):
-                    logger.debug('%s in %s, False' % (ext, file))
-                    return False
-
-            for t in self.types:
-                if file.count(t):
-                    logger.debug('%s in %s, true' % (t, file))
-                    return True
-
-            else:  # no file type returned true
+        for efile in self.exclude['files']:
+            if file.count(efile):
+                logger.debug('%s in %s, False' % (efile, file))
                 return False
+
+        for ext in self.exclude['extensions']:
+            if file.count(ext):
+                logger.debug('%s in %s, False' % (ext, file))
+                return False
+
+        for t in self.types:
+            if file.count(t):
+                logger.debug('%s in %s, true' % (t, file))
+                return True
+
+        else:  # no file type returned true
+            return False
 
     def _search_path(self):
         logger.debug('start search %s' % self.path)
@@ -75,21 +77,22 @@ class Searcher:
                 if not self._validate_file(file):
                     pass
                 else:
-                    self._parse_file(path, file)
+                    self._parse_file(path, file, self.regex)
 
-    def _parse_file(self, path, file):
+    def _parse_file(self, path, file, pattern=r'(?i).*# TODO.*'):
         has_todo = False
         temp_log = io.StringIO()
         if os.access(os.path.join(path, file), os.F_OK):
             try:
                 with open(os.path.join(path, file)) as infile:
                     for i, line in enumerate(infile):
-                        if line.count('# TODO'):
+                        if re.search(pattern, line):
                             temp_log.write('%s:%s' % (i, line))
                             logger.debug('%s:%s' % (i, line.strip('\n')))
                             has_todo = True
-            except UnicodeDecodeError as e:
-                logger.debug('%s throws UnicodeDecodeError')
+            except UnicodeDecodeError:
+                logger.debug('%s throws UnicodeDecodeError'
+                             % os.path.join(path, file))
 
             if has_todo:
                 self.log.write('\n\n%s\n\n--------\n\n' % os.path.join(path,
@@ -231,6 +234,15 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--version', help='Display version.',
                         action='store_true')
 
+    parser.add_argument('-r', '--regex', help='The  Unix standard Regular '
+                        'Expression to search with. Defaults to '
+                        '\"r\'(?i).*# TODO.*\'\". Due to the way Python '
+                        'handles Regex, you must escape all \'\\\' characters '
+                        'with an extra \'\\\'; such that including the literal '
+                        'representation of a Regex reserved character (i.e '
+                        '\'.\') would require an extra \'\\\' (i.e \'\\\\.\')',
+                        default=r'(?i).*# TODO.*', type=str)
+
     parser.add_argument('-c', '--cli', help='Use this flag to skip launching '
                                             'the applet. Use this flag in '
                                             'conjunction with other flags to '
@@ -276,7 +288,7 @@ if __name__ == '__main__':
                 raise RuntimeError('Could not access the path created.')
 
         Searcher(path, filetypes, exclude_extensions, exclude_files,
-                 exclude_path, parsed.quiet)
+                 exclude_path, parsed.regex, parsed.quiet)
     else:
         root = Tk()
         main(root)
