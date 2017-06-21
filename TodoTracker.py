@@ -116,58 +116,72 @@ class Searcher:
         return self.log
 
 
-class main:
+class main(ttk.Frame):
     def __init__(self, root):
+        super(main, self).__init__(root)
         self.root = root
         self.path = None
         self.file_types = []
         self.exclude = {}
 
-        path_and_types_frame = ttk.Frame()
+        # PATH AND TYPES
+        path_and_types_frame = ttk.Frame(self)
         path_and_types_frame.pack()
         self.path_text = StringVar()
         self.path_text.set(os.getcwd())
-        Button(path_and_types_frame, text='Select Search Path',
-               command=lambda:
-               self.path_text.set(filedialog.askdirectory())).grid(column=0,
-                                                                   row=0)
+        ttk.Button(path_and_types_frame, text='Select Search Path',
+                   command=lambda:
+                   self.path_text.set(filedialog.askdirectory())).grid(column=0,
+                                                                       row=0)
 
-        self.path_label = Label(path_and_types_frame,
-                                textvariable=self.path_text)
+        self.path_label = ttk.Label(path_and_types_frame,
+                                    textvariable=self.path_text)
         self.path_label.grid(column=1, row=0)
-        Label(path_and_types_frame,
-              text='File types, seperated by commas:').grid(row=1, column=0)
+        ttk.Label(path_and_types_frame,
+                  text='File types, seperated by commas:').grid(row=1, column=0)
         self.types_entry = Entry(path_and_types_frame)
         self.types_entry.grid(row=1, column=1)
 
-        exclude_frame = ttk.Frame()
+        # EXCLUDE
+        exclude_frame = ttk.Frame(self)
         exclude_frame.pack()
-        Label(exclude_frame, text='To exclude various files, file types, and '
-                                  'paths, include each entry separated by '
-                                  'commas.').grid(row=0, columnspan=2,
-                                                  pady=(20, 10))
+        ttk.Label(exclude_frame, text='To exclude various files, file types, '
+                  'and paths, include each entry separated by commas.'
+                  ).grid(row=0, columnspan=2, pady=(20, 10))
 
-        Label(exclude_frame,
-              text='Extensions to exclude, seperated by commas:').grid(row=1,
-                                                                       column=0)
+        ttk.Label(exclude_frame,
+                  text='Extensions to exclude, seperated by commas:'
+                  ).grid(row=1, column=0)
         self.extensions_input = Entry(exclude_frame)
         self.extensions_input.grid(row=1, column=1)
 
-        Label(exclude_frame,
-              text='File names to exclude, seperated by commas:').grid(row=2,
-                                                                       column=0)
+        ttk.Label(exclude_frame,
+                  text='File names to exclude, seperated by commas:'
+                  ).grid(row=2, column=0)
         self.files_input = Entry(exclude_frame)
         self.files_input.grid(row=2, column=1)
 
-        Label(exclude_frame,
-              text='Paths to exclude, seperated by commas:').grid(row=3,
-                                                                  column=0)
+        ttk.Label(exclude_frame,
+                  text='Paths to exclude, seperated by commas:').grid(row=3,
+                                                                      column=0)
         self.paths_input = Entry(exclude_frame)
         self.paths_input.grid(row=3, column=1)
 
-        Button(root, text='Specify output folder and run search...',
-               command=lambda:
-               self._run_search(filedialog.askdirectory())).pack(pady=(20, 10))
+        regex_frame = ttk.Frame(self)
+        regex_frame.pack(pady=(20, 10))
+        ttk.Label(regex_frame,
+                  text='Specify Regex pattern').grid(row=0, column=0)
+        ttk.Label(regex_frame,
+                  text='(all \'\\\' characters must be '
+                  'escaped by an extra \'\\\'):').grid(row=1, column=0)
+        self.regex_input = Entry(regex_frame)
+        self.regex_input.grid(row=0, rowspan=2, column=1)
+
+        ttk.Button(self, text='Specify output folder and run search...',
+                   command=lambda:
+                   self._run_search(filedialog.askdirectory())
+                   ).pack(pady=(20, 10))
+        self.pack()
 
     def _run_search(self, outpath):
         if self.types_entry.get() == '':
@@ -188,13 +202,20 @@ class main:
         else:
             paths = list(self.paths_input.get().split(','))
 
+        if self.regex_input.get() == '':
+            regex = "(?i).*#.TODO.*"
+        else:
+            regex = self.regex_input.get()
+
         popup = Toplevel(root)
 
-        Label(popup, text=Searcher(self.path_text.get(),
-                                   list(self.types_entry.get().split(',')),
-                                   extensions, files, paths,
-                                   True).write_file(
-            os.path.join(outpath, 'to.do')).getvalue(), justify=LEFT).pack()
+        ttk.Label(popup,
+                  text=Searcher(self.path_text.get(),
+                                list(self.types_entry.get().split(',')),
+                                extensions, files, paths, regex, True
+                                ).write_file(os.path.join(
+                                             outpath, 'to.do')
+                                             ).getvalue(), justify=LEFT).pack()
 
 
 if __name__ == '__main__':
