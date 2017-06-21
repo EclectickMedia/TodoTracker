@@ -3,6 +3,7 @@ import os
 import time
 import io
 from log import logger
+import re
 
 from tkinter import *
 from tkinter import ttk
@@ -18,7 +19,7 @@ versionstr = '%s %s (c) Eclectick Media Solutions, circa %s' % (buildname,
 
 class Searcher:
     def __init__(self, path, types, extensions=list(), files=list(),
-                 epaths=list(), quiet=False):
+                 epaths=list(), regex=r'(?!).*# TODO.*', quiet=False):
         if not os.access(path, os.F_OK):
             raise OSError('Could not access search path')
 
@@ -32,6 +33,7 @@ class Searcher:
             'files': files,
             'paths': epaths
         }
+        self.regex = regex
         self.quiet = quiet
         self.log = io.StringIO()
         self.log.write('TODO MASTER (%s)'
@@ -46,23 +48,23 @@ class Searcher:
             print(self.log.getvalue())
 
     def _validate_file(self, file):
-            for efile in self.exclude['files']:
-                if file.count(efile):
-                    logger.debug('%s in %s, False' % (efile, file))
-                    return False
-
-            for ext in self.exclude['extensions']:
-                if file.count(ext):
-                    logger.debug('%s in %s, False' % (ext, file))
-                    return False
-
-            for t in self.types:
-                if file.count(t):
-                    logger.debug('%s in %s, true' % (t, file))
-                    return True
-
-            else:  # no file type returned true
+        for efile in self.exclude['files']:
+            if file.count(efile):
+                logger.debug('%s in %s, False' % (efile, file))
                 return False
+
+        for ext in self.exclude['extensions']:
+            if file.count(ext):
+                logger.debug('%s in %s, False' % (ext, file))
+                return False
+
+        for t in self.types:
+            if file.count(t):
+                logger.debug('%s in %s, true' % (t, file))
+                return True
+
+        else:  # no file type returned true
+            return False
 
     def _search_path(self):
         logger.debug('start search %s' % self.path)
@@ -75,21 +77,22 @@ class Searcher:
                 if not self._validate_file(file):
                     pass
                 else:
-                    self._parse_file(path, file)
+                    self._parse_file(path, file, self.regex)
 
-    def _parse_file(self, path, file):
+    def _parse_file(self, path, file, pattern=r'(?i).*# TODO.*'):
         has_todo = False
         temp_log = io.StringIO()
         if os.access(os.path.join(path, file), os.F_OK):
             try:
                 with open(os.path.join(path, file)) as infile:
                     for i, line in enumerate(infile):
-                        if line.count('# TODO'):
+                        if re.search(pattern, line):
                             temp_log.write('%s:%s' % (i, line))
                             logger.debug('%s:%s' % (i, line.strip('\n')))
                             has_todo = True
-            except UnicodeDecodeError as e:
-                logger.debug('%s throws UnicodeDecodeError')
+            except UnicodeDecodeError:
+                logger.debug('%s throws UnicodeDecodeError'
+                             % os.path.join(path, file))
 
             if has_todo:
                 self.log.write('\n\n%s\n\n--------\n\n' % os.path.join(path,
@@ -113,58 +116,72 @@ class Searcher:
         return self.log
 
 
-class main:
+class main(ttk.Frame):
     def __init__(self, root):
+        super(main, self).__init__(root)
         self.root = root
         self.path = None
         self.file_types = []
         self.exclude = {}
 
-        path_and_types_frame = ttk.Frame()
+        # PATH AND TYPES
+        path_and_types_frame = ttk.Frame(self)
         path_and_types_frame.pack()
         self.path_text = StringVar()
         self.path_text.set(os.getcwd())
-        Button(path_and_types_frame, text='Select Search Path',
-               command=lambda:
-               self.path_text.set(filedialog.askdirectory())).grid(column=0,
-                                                                   row=0)
+        ttk.Button(path_and_types_frame, text='Select Search Path',
+                   command=lambda:
+                   self.path_text.set(filedialog.askdirectory())).grid(column=0,
+                                                                       row=0)
 
-        self.path_label = Label(path_and_types_frame,
-                                textvariable=self.path_text)
+        self.path_label = ttk.Label(path_and_types_frame,
+                                    textvariable=self.path_text)
         self.path_label.grid(column=1, row=0)
-        Label(path_and_types_frame,
-              text='File types, seperated by commas:').grid(row=1, column=0)
+        ttk.Label(path_and_types_frame,
+                  text='File types, seperated by commas:').grid(row=1, column=0)
         self.types_entry = Entry(path_and_types_frame)
         self.types_entry.grid(row=1, column=1)
 
-        exclude_frame = ttk.Frame()
+        # EXCLUDE
+        exclude_frame = ttk.Frame(self)
         exclude_frame.pack()
-        Label(exclude_frame, text='To exclude various files, file types, and '
-                                  'paths, include each entry separated by '
-                                  'commas.').grid(row=0, columnspan=2,
-                                                  pady=(20, 10))
+        ttk.Label(exclude_frame, text='To exclude various files, file types, '
+                  'and paths, include each entry separated by commas.'
+                  ).grid(row=0, columnspan=2, pady=(20, 10))
 
-        Label(exclude_frame,
-              text='Extensions to exclude, seperated by commas:').grid(row=1,
-                                                                       column=0)
+        ttk.Label(exclude_frame,
+                  text='Extensions to exclude, seperated by commas:'
+                  ).grid(row=1, column=0)
         self.extensions_input = Entry(exclude_frame)
         self.extensions_input.grid(row=1, column=1)
 
-        Label(exclude_frame,
-              text='File names to exclude, seperated by commas:').grid(row=2,
-                                                                       column=0)
+        ttk.Label(exclude_frame,
+                  text='File names to exclude, seperated by commas:'
+                  ).grid(row=2, column=0)
         self.files_input = Entry(exclude_frame)
         self.files_input.grid(row=2, column=1)
 
-        Label(exclude_frame,
-              text='Paths to exclude, seperated by commas:').grid(row=3,
-                                                                  column=0)
+        ttk.Label(exclude_frame,
+                  text='Paths to exclude, seperated by commas:').grid(row=3,
+                                                                      column=0)
         self.paths_input = Entry(exclude_frame)
         self.paths_input.grid(row=3, column=1)
 
-        Button(root, text='Specify output folder and run search...',
-               command=lambda:
-               self._run_search(filedialog.askdirectory())).pack(pady=(20, 10))
+        regex_frame = ttk.Frame(self)
+        regex_frame.pack(pady=(20, 10))
+        ttk.Label(regex_frame,
+                  text='Specify Regex pattern').grid(row=0, column=0)
+        ttk.Label(regex_frame,
+                  text='(all \'\\\' characters must be '
+                  'escaped by an extra \'\\\'):').grid(row=1, column=0)
+        self.regex_input = Entry(regex_frame)
+        self.regex_input.grid(row=0, rowspan=2, column=1)
+
+        ttk.Button(self, text='Specify output folder and run search...',
+                   command=lambda:
+                   self._run_search(filedialog.askdirectory())
+                   ).pack(pady=(20, 10))
+        self.pack()
 
     def _run_search(self, outpath):
         if self.types_entry.get() == '':
@@ -185,13 +202,20 @@ class main:
         else:
             paths = list(self.paths_input.get().split(','))
 
+        if self.regex_input.get() == '':
+            regex = "(?i).*#.TODO.*"
+        else:
+            regex = self.regex_input.get()
+
         popup = Toplevel(root)
 
-        Label(popup, text=Searcher(self.path_text.get(),
-                                   list(self.types_entry.get().split(',')),
-                                   extensions, files, paths,
-                                   True).write_file(
-            os.path.join(outpath, 'to.do')).getvalue(), justify=LEFT).pack()
+        ttk.Label(popup,
+                  text=Searcher(self.path_text.get(),
+                                list(self.types_entry.get().split(',')),
+                                extensions, files, paths, regex, True
+                                ).write_file(os.path.join(
+                                             outpath, 'to.do')
+                                             ).getvalue(), justify=LEFT).pack()
 
 
 if __name__ == '__main__':
@@ -230,6 +254,15 @@ if __name__ == '__main__':
 
     parser.add_argument('-v', '--version', help='Display version.',
                         action='store_true')
+
+    parser.add_argument('-r', '--regex', help='The  Unix standard Regular '
+                        'Expression to search with. Defaults to '
+                        '\"r\'(?i).*# TODO.*\'\". Due to the way Python '
+                        'handles Regex, you must escape all \'\\\' characters '
+                        'with an extra \'\\\'; such that including the literal '
+                        'representation of a Regex reserved character (i.e '
+                        '\'.\') would require an extra \'\\\' (i.e \'\\\\.\')',
+                        default=r'(?i).*# TODO.*', type=str)
 
     parser.add_argument('-c', '--cli', help='Use this flag to skip launching '
                                             'the applet. Use this flag in '
@@ -276,7 +309,7 @@ if __name__ == '__main__':
                 raise RuntimeError('Could not access the path created.')
 
         Searcher(path, filetypes, exclude_extensions, exclude_files,
-                 exclude_path, parsed.quiet)
+                 exclude_path, parsed.regex, parsed.quiet)
     else:
         root = Tk()
         main(root)
