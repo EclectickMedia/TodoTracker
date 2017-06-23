@@ -4,6 +4,7 @@ import time
 import io
 from log import logger
 import re
+import unittest
 
 from tkinter import *
 from tkinter import ttk
@@ -45,10 +46,6 @@ class Searcher:
                                             self.exclude, repr(regex),
                                             self.quiet))
 
-        self._search_path()
-        if not self.quiet:
-            print(self.log.getvalue())
-
     def _validate_file(self, file):
         for efile in self.exclude['files']:
             if file.count(efile):
@@ -68,10 +65,11 @@ class Searcher:
         else:  # no file type returned true
             return False
 
-    def _search_path(self):
+    def search_path(self):
         logger.debug('start search %s' % self.path)
         for path, dirs, files in os.walk(self.path, topdown=True):
-            [dirs.remove(d) for d in list(dirs) if d in self.exclude['paths']]
+            [dirs.remove(d) for d in list(dirs) if
+             self.exclude['paths'].count(d)]  # Removes skip able directories
             logger.debug('parse files in %s' % path)
             for file in files:
                 logger.debug('validate and parse %s' %
@@ -80,6 +78,9 @@ class Searcher:
                     pass
                 else:
                     self._parse_file(path, file)
+
+        if not self.quiet:
+            print(self.log.getvalue())
 
     def _parse_file(self, path, file):
         has_pattern = False
@@ -117,6 +118,130 @@ class Searcher:
             outfile.write(self.log.getvalue())
 
         return self.log
+
+
+class SearcherTest(unittest.TestCase):
+    """ Tests functionality of Searcher class.
+
+    Uses the data file 'tests/sample_data.test'.
+    Creates the data file 'tests/out.do' (for `test_write_file`, cleans after
+    use).
+    """
+    # TODO test `search_path`
+    # TODO test `search_path` skips directories properly
+    logger.disabled = True
+
+    def test_init(self):
+        searcher = Searcher('logs', ['test'], ['test1', 'test2'],
+                            files=['test'], epaths=['test1', 'test2', 'test3'],
+                            regex='test', quiet=True)
+
+        # Path validation
+        self.assertEqual('logs', searcher.path)
+        self.assertEqual(4, len(searcher.path))
+        self.assertEqual(str, type(searcher.path))
+
+        # Types validation
+        self.assertEqual(['test'], searcher.types)
+        self.assertEqual(1, len(searcher.types))
+        self.assertEqual(list, type(searcher.types))
+
+        # Exclude Extensions validation
+        self.assertEqual(['test1', 'test2'], searcher.exclude['extensions'])
+        self.assertEqual(2, len(searcher.exclude['extensions']))
+        self.assertEqual(list, type(searcher.exclude['extensions']))
+
+        # Exclude Files validation
+        self.assertEqual(['test'], searcher.exclude['files'])
+        self.assertEqual(1, len(searcher.exclude['files']))
+        self.assertEqual(list, type(searcher.exclude['files']))
+
+        # Exclude Paths validation
+        self.assertEqual(['test1', 'test2', 'test3'],
+                         searcher.exclude['paths'])
+        self.assertEqual(3, len(searcher.exclude['paths']))
+        self.assertEqual(list, type(searcher.exclude['files']))
+
+        # Exclude validation
+        self.assertEqual(3, len(searcher.exclude))
+        self.assertEqual(dict, type(searcher.exclude))
+        categories = ['extensions', 'files', 'paths']
+        for key in searcher.exclude:  # check for keys that aren't correct
+            if not categories.count(key):
+                self.fail('Not all keys were present in searcher.exclude!')
+
+        # Regex validation
+        self.assertEqual(re.compile('test'), searcher.regex)
+        self.assertEqual('test', searcher.regex.pattern)
+
+        # Log validation
+        self.assertEqual(type(io.StringIO()), type(searcher.log))
+        self.assertTrue(searcher.log.getvalue().count('TODO MASTER'))
+
+    def test__validate_file_succeeds(self):
+        searcher = Searcher('tests', ['test'])
+        self.assertTrue(searcher._validate_file(
+            os.path.join('tests', 'sample_data.test')))
+
+    def test__validate_file_fails_on_excluded_file(self):
+        searcher = Searcher('tests', ['html'], files=['test'])
+        self.assertFalse(searcher._validate_file(
+            os.path.join('tests', 'sample_data.test')))
+
+    def test__validate_file_fails_on_excluded_extension(self):
+        searcher = Searcher('tests', ['html'], extensions=['test'])
+        self.assertFalse(searcher._validate_file(
+            os.path.join('tests', 'sample_data.test')))
+
+    def test__validate_file_fails_on_no_file_matches(self):
+        searcher = Searcher('tests', ['wont match'])
+        self.assertFalse(searcher._validate_file(
+            os.path.join('tests', 'sample_data.test')))
+
+    def test__parse_file_finds_tag(self):
+        searcher = Searcher('tests', ['test'], regex='^ *#.*TODO.*$')
+        self.assertTrue(searcher._parse_file('tests', 'sample_data.test'))
+        self.assertTrue(searcher.log.getvalue().count('0:# TODO'))
+        self.assertTrue(searcher.log.getvalue().count('sample_data.test') == 1)
+
+    def test__parse_file_with_complex_regex_finds_tag(self):
+        searcher = Searcher('tests', ['test'],
+                            regex='^ *#.*TODO.*$|^ *//.*TODO.*$')
+        self.assertTrue(searcher._parse_file('tests', 'sample_data.test'))
+        self.assertTrue(searcher.log.getvalue().count('1:// TODO'))
+        self.assertTrue(searcher.log.getvalue().count('sample_data.test') == 1)
+
+    def test__parse_file_doesnt_find_tag(self):
+        searcher = Searcher('tests', ['test'],
+                            regex='^$')
+        self.assertFalse(searcher._parse_file('tests', 'sample_data.test'))
+        self.assertFalse(searcher.log.getvalue().count('0:# TODO'))
+        self.assertFalse(searcher.log.getvalue().count('1:// TODO'))
+        self.assertTrue(searcher.log.getvalue().count('sample_data.test') < 1)
+
+    @unittest.skip('Under Construction: Need to find sample file')
+    def test__parse_file_catches_unicode_decode_error(self):
+        # TODO Test `_parse_file` Unicode error handling
+        pass
+
+    def test__parse_file_raises_runtime_error(self):
+        searcher = Searcher('tests', ['test'],
+                            regex='^$')
+        with self.assertRaises(RuntimeError):
+            searcher._parse_file('a', 'b')
+
+    def test_write_file(self):
+        searcher = Searcher('tests', ['test'],
+                            regex="^.*#.*TODO.*$|^.*//.*TODO.*$", quiet=True)
+        searcher.search_path()
+        searcher_log = searcher.write_file('tests/out.do')
+        self.assertEqual(searcher.log.getvalue(), searcher_log.getvalue())
+
+        with open('tests/out.do') as out_file:
+            self.assertEqual(out_file.read(), searcher_log.getvalue())
+
+        os.remove('tests/out.do')  # clean up tests directory, avoid
+        # contamination
 
 
 class main(ttk.Frame):
@@ -212,13 +337,13 @@ class main(ttk.Frame):
 
         popup = Toplevel(root)
 
-        ttk.Label(popup,
-                  text=Searcher(self.path_text.get(),
-                                list(self.types_entry.get().split(',')),
-                                extensions, files, paths, regex, True
-                                ).write_file(os.path.join(
-                                             outpath, 'to.do')
-                                             ).getvalue(), justify=LEFT).pack()
+        searcher = Searcher(self.path_text.get(), list(
+            self.types_entry.get().split(',')), extensions, files, paths, regex,
+            True)
+        searcher.search_path()
+        searcher_log = searcher.write_file(os.path.join(outpath, 'to.do'))
+
+        ttk.Label(popup, text=searcher_log.getvalue(), justify=LEFT).pack()
 
 
 if __name__ == '__main__':
@@ -247,6 +372,10 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--filetypes',
                         help='The file extensions excluding the \'.\' to check '
                              'for, separated by commas.')
+
+    parser.add_argument('-oP', '--output_path',
+                        help='The path to which the software should output a '
+                        'to.do master file.', default='./', type=str)
 
     parser.add_argument('-p', '--path',
                         help='The path to search for TODO lines.')
@@ -303,16 +432,23 @@ if __name__ == '__main__':
         else:
             filetypes = list(parsed.filetypes.split(','))
 
+        if parsed.output_path is './':
+            output_path = os.path.expanduser('.')
+        else:
+            output_path = parsed.output_path
+
         if parsed.path is None:
-            path = './'
+            path = os.path.expanduser('.')
         else:
             if os.access(parsed.path, os.F_OK):
                 path = parsed.path
             else:
                 raise RuntimeError('Could not access the path created.')
 
-        Searcher(path, filetypes, exclude_extensions, exclude_files,
-                 exclude_path, parsed.regex, parsed.quiet)
+        searcher = Searcher(path, filetypes, exclude_extensions, exclude_files,
+                            exclude_path, parsed.regex, parsed.quiet)
+        searcher.search_path()
+        searcher_log = searcher.write_file(os.path.join(output_path, 'to.do'))
     else:
         root = Tk()
         main(root)
