@@ -127,10 +127,7 @@ class SearcherTest(unittest.TestCase):
     Creates the data file 'tests/out.do' (for `test_write_file`, cleans after
     use).
     """
-    # TODO test `search_path`
     # TODO test `search_path` skips directories properly
-    logger.disabled = True
-
     def test_init(self):
         searcher = Searcher('logs', ['test'], ['test1', 'test2'],
                             files=['test'], epaths=['test1', 'test2', 'test3'],
@@ -229,6 +226,26 @@ class SearcherTest(unittest.TestCase):
                             regex='^$')
         with self.assertRaises(RuntimeError):
             searcher._parse_file('a', 'b')
+
+    def test_search_path_collects_data_when_present(self):
+        # logger.disabled = False
+        searcher = Searcher('tests', ['test'], quiet=True,
+                            regex="^# TODO.*$|^// TODO.*$")
+        searcher.search_path()
+        self.assertTrue(searcher.log.getvalue().count("0:# TODO"))
+        self.assertTrue(searcher.log.getvalue().count("1:// TODO"))
+        self.assertTrue(searcher.log.getvalue().count("sample_data.test") == 1)
+        # logger.disabled = True
+
+    def test_search_path_no_data_present(self):
+        # logger.disabled = False
+        searcher = Searcher('tests', ['test'], quiet=True,
+                            regex="^$")
+        searcher.search_path()
+        self.assertFalse(searcher.log.getvalue().count("0:# TODO"))
+        self.assertFalse(searcher.log.getvalue().count("1:// TODO"))
+        self.assertFalse(searcher.log.getvalue().count("sample_data.test") == 1)
+        # logger.disabled = True
 
     def test_write_file(self):
         searcher = Searcher('tests', ['test'],
