@@ -120,9 +120,57 @@ class Searcher:
 
 
 class SearcherTest(unittest.TestCase):
+    logger.disabled = True
+
     def test_init(self):
+        searcher = Searcher('logs', ['test'], ['test1', 'test2'],
+                            files=['test'], epaths=['test1', 'test2', 'test3'],
+                            regex='test', quiet=True)
+
+        # Path validation
+        self.assertEqual('logs', searcher.path)
+        self.assertEqual(4, len(searcher.path))
+        self.assertEqual(str, type(searcher.path))
+
+        # Types validation
+        self.assertEqual(['test'], searcher.types)
+        self.assertEqual(1, len(searcher.types))
+        self.assertEqual(list, type(searcher.types))
+
+        # Exclude Extensions validation
+        self.assertEqual(['test1', 'test2'], searcher.exclude['extensions'])
+        self.assertEqual(2, len(searcher.exclude['extensions']))
+        self.assertEqual(list, type(searcher.exclude['extensions']))
+
+        # Exclude Files validation
+        self.assertEqual(['test'], searcher.exclude['files'])
+        self.assertEqual(1, len(searcher.exclude['files']))
+        self.assertEqual(list, type(searcher.exclude['files']))
+
+        # Exclude Paths validation
+        self.assertEqual(['test1', 'test2', 'test3'],
+                         searcher.exclude['paths'])
+        self.assertEqual(3, len(searcher.exclude['paths']))
+        self.assertEqual(list, type(searcher.exclude['files']))
+
+        # Exclude validation
+        self.assertEqual(3, len(searcher.exclude))
+        self.assertEqual(dict, type(searcher.exclude))
+        categories = ['extensions', 'files', 'paths']
+        for key in searcher.exclude:  # check for keys that aren't correct
+            if not categories.count(key):
+                self.fail('Not all keys were present in searcher.exclude!')
+
+        # Regex validation
+        self.assertEqual(re.compile('test'), searcher.regex)
+        self.assertEqual('test', searcher.regex.pattern)
+
+        # Log validation
+        self.assertEqual(type(io.StringIO()), type(searcher.log))
+        self.assertTrue(searcher.log.getvalue().count('TODO MASTER'))
+
+    def test__validate_file(self):
         pass
-    pass
 
 
 class main(ttk.Frame):
@@ -329,7 +377,7 @@ if __name__ == '__main__':
         searcher = Searcher(path, filetypes, exclude_extensions, exclude_files,
                             exclude_path, parsed.regex, parsed.quiet)
         searcher.search_path()
-        searcher_log = searcher.write_file(os.path.join(os.curdir, 'to.do'))
+        searcher_log = searcher.write_file(os.path.join(output_path, 'to.do'))
     else:
         root = Tk()
         main(root)
