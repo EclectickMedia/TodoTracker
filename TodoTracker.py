@@ -68,7 +68,8 @@ class Searcher:
     def search_path(self):
         logger.debug('start search %s' % self.path)
         for path, dirs, files in os.walk(self.path, topdown=True):
-            [dirs.remove(d) for d in list(dirs) if d in self.exclude['paths']]
+            [dirs.remove(d) for d in list(dirs) if
+             self.exclude['paths'].count(d)]  # Removes skip able directories
             logger.debug('parse files in %s' % path)
             for file in files:
                 logger.debug('validate and parse %s' %
