@@ -200,17 +200,15 @@ class SearcherTest(unittest.TestCase):
 
     def test__parse_file_finds_tag(self):
         searcher = Searcher('tests', ['test'], regex='^ *#.*TODO.*$')
-        searcher._parse_file('tests', 'sample_data.test')
         self.assertTrue(searcher._parse_file('tests', 'sample_data.test'))
         self.assertTrue(searcher.log.getvalue().count('0:# TODO'))
-        self.assertTrue(searcher.log.getvalue().count('sample_data.test'))
+        self.assertTrue(searcher.log.getvalue().count('sample_data.test') == 1)
 
     def test__parse_file_with_complex_regex_finds_tag(self):
         searcher = Searcher('tests', ['test'],
                             regex='^ *#.*TODO.*$|^ *//.*TODO.*$')
         self.assertTrue(searcher._parse_file('tests', 'sample_data.test'))
         self.assertTrue(searcher.log.getvalue().count('1:// TODO'))
-        # TODO Devise a way to ensure that the file name was only written once
         self.assertTrue(searcher.log.getvalue().count('sample_data.test') == 1)
 
     def test__parse_file_doesnt_find_tag(self):
