@@ -121,6 +121,14 @@ class Searcher:
 
 
 class SearcherTest(unittest.TestCase):
+    """ Tests functionality of Searcher class.
+
+    Uses the data file 'tests/sample_data.test'.
+    Creates the data file 'tests/out.do' (for `test_write_file`, cleans after
+    use).
+    """
+    # TODO test `search_path`
+    # TODO test `search_path` skips directories properly
     logger.disabled = True
 
     def test_init(self):
@@ -170,8 +178,72 @@ class SearcherTest(unittest.TestCase):
         self.assertEqual(type(io.StringIO()), type(searcher.log))
         self.assertTrue(searcher.log.getvalue().count('TODO MASTER'))
 
-    def test__validate_file(self):
+    def test__validate_file_succeeds(self):
+        searcher = Searcher('tests', ['test'])
+        self.assertTrue(searcher._validate_file(
+            os.path.join('tests', 'sample_data.test')))
+
+    def test__validate_file_fails_on_excluded_file(self):
+        searcher = Searcher('tests', ['html'], files=['test'])
+        self.assertFalse(searcher._validate_file(
+            os.path.join('tests', 'sample_data.test')))
+
+    def test__validate_file_fails_on_excluded_extension(self):
+        searcher = Searcher('tests', ['html'], extensions=['test'])
+        self.assertFalse(searcher._validate_file(
+            os.path.join('tests', 'sample_data.test')))
+
+    def test__validate_file_fails_on_no_file_matches(self):
+        searcher = Searcher('tests', ['wont match'])
+        self.assertFalse(searcher._validate_file(
+            os.path.join('tests', 'sample_data.test')))
+
+    def test__parse_file_finds_tag(self):
+        searcher = Searcher('tests', ['test'], regex='^ *#.*TODO.*$')
+        searcher._parse_file('tests', 'sample_data.test')
+        self.assertTrue(searcher._parse_file('tests', 'sample_data.test'))
+        self.assertTrue(searcher.log.getvalue().count('0:# TODO'))
+        self.assertTrue(searcher.log.getvalue().count('sample_data.test'))
+
+    def test__parse_file_with_complex_regex_finds_tag(self):
+        searcher = Searcher('tests', ['test'],
+                            regex='^ *#.*TODO.*$|^ *//.*TODO.*$')
+        self.assertTrue(searcher._parse_file('tests', 'sample_data.test'))
+        self.assertTrue(searcher.log.getvalue().count('1:// TODO'))
+        # TODO Devise a way to ensure that the file name was only written once
+        self.assertTrue(searcher.log.getvalue().count('sample_data.test') == 1)
+
+    def test__parse_file_doesnt_find_tag(self):
+        searcher = Searcher('tests', ['test'],
+                            regex='^$')
+        self.assertFalse(searcher._parse_file('tests', 'sample_data.test'))
+        self.assertFalse(searcher.log.getvalue().count('0:# TODO'))
+        self.assertFalse(searcher.log.getvalue().count('1:// TODO'))
+        self.assertTrue(searcher.log.getvalue().count('sample_data.test') < 1)
+
+    @unittest.skip('Under Construction: Need to find sample file')
+    def test__parse_file_catches_unicode_decode_error(self):
+        # TODO Test `_parse_file` Unicode error handling
         pass
+
+    def test__parse_file_raises_runtime_error(self):
+        searcher = Searcher('tests', ['test'],
+                            regex='^$')
+        with self.assertRaises(RuntimeError):
+            searcher._parse_file('a', 'b')
+
+    def test_write_file(self):
+        searcher = Searcher('tests', ['test'],
+                            regex="^.*#.*TODO.*$|^.*//.*TODO.*$", quiet=True)
+        searcher.search_path()
+        searcher_log = searcher.write_file('tests/out.do')
+        self.assertEqual(searcher.log.getvalue(), searcher_log.getvalue())
+
+        with open('tests/out.do') as out_file:
+            self.assertEqual(out_file.read(), searcher_log.getvalue())
+
+        os.remove('tests/out.do')  # clean up tests directory, avoid
+        # contamination
 
 
 class main(ttk.Frame):
