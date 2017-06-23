@@ -234,11 +234,6 @@ class SearcherTest(unittest.TestCase):
         self.assertFalse(searcher.log.getvalue().count('1:// TODO'))
         self.assertTrue(searcher.log.getvalue().count('sample_data.test') < 1)
 
-    @unittest.skip('Under Construction: Need to find sample file')
-    def test__parse_file_catches_unicode_decode_error(self):
-        # TODO Test `_parse_file` Unicode error handling
-        pass
-
     def test__parse_file_raises_runtime_error(self):
         searcher = Searcher('tests', ['test'],
                             regex='^$')
@@ -247,25 +242,21 @@ class SearcherTest(unittest.TestCase):
 
     @logMe
     def test_search_path_collects_data_when_present(self):
-        # logger.disabled = False
         searcher = Searcher('tests', ['test'], quiet=True,
                             regex="^# TODO.*$|^// TODO.*$")
         searcher.search_path()
         self.assertTrue(searcher.log.getvalue().count("0:# TODO"))
         self.assertTrue(searcher.log.getvalue().count("1:// TODO"))
         self.assertTrue(searcher.log.getvalue().count("sample_data.test") == 1)
-        # logger.disabled = True
 
     @logMe
     def test_search_path_no_data_present(self):
-        # logger.disabled = False
         searcher = Searcher('tests', ['test'], quiet=True,
                             regex="^$")
         searcher.search_path()
         self.assertFalse(searcher.log.getvalue().count("0:# TODO"))
         self.assertFalse(searcher.log.getvalue().count("1:// TODO"))
         self.assertFalse(searcher.log.getvalue().count("sample_data.test") == 1)
-        # logger.disabled = True
 
     @logMe
     def test_write_file(self):
