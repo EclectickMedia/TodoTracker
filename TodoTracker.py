@@ -248,6 +248,10 @@ if __name__ == '__main__':
                         help='The file extensions excluding the \'.\' to check '
                              'for, separated by commas.')
 
+    parser.add_argument('-oP', '--output_path',
+                        help='The path to which the software should output a '
+                        'to.do master file.', default='./', type=str)
+
     parser.add_argument('-p', '--path',
                         help='The path to search for TODO lines.')
 
@@ -303,8 +307,13 @@ if __name__ == '__main__':
         else:
             filetypes = list(parsed.filetypes.split(','))
 
+        if parsed.output_path is './':
+            output_path = os.path.expanduser('.')
+        else:
+            output_path = parsed.output_path
+
         if parsed.path is None:
-            path = './'
+            path = os.path.expanduser('.')
         else:
             if os.access(parsed.path, os.F_OK):
                 path = parsed.path
