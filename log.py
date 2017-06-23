@@ -31,15 +31,11 @@ searcher_handler = handlers.RotatingFileHandler(LOG_PATH,
 searcher_handler.setFormatter(file_formatter)
 searcher_handler.setLevel(logging.DEBUG)
 
-# builder_handler = handlers.RotatingFileHandler('logs/builder.log',
-#                                                maxBytes=500000, backupCount=1)
-# builder_handler.setFormatter(file_formatter)
-# builder_handler.setLevel(logging.DEBUG)
 
-# tests_handler = handlers.RotatingFileHandler('logs/tests.log',
-#                                              maxBytes=500000, backupCount=1)
-# tests_handler.setFormatter(file_formatter)
-# tests_handler.setLevel(logging.DEBUG)
+tests_handler = handlers.RotatingFileHandler('logs/tests.log',
+                                             maxBytes=500000, backupCount=1)
+tests_handler.setFormatter(file_formatter)
+tests_handler.setLevel(logging.DEBUG)
 
 
 logger = logging.getLogger('base')
@@ -47,8 +43,5 @@ logger.setLevel(logging.DEBUG)
 logger.addHandler(searcher_handler)
 logger.addHandler(stream_handler)
 
-# builder_logger = logging.getLogger('base.builder')
-# builder_logger.addHandler(builder_handler)
-
-# test_logger = logging.getLogger('base.tests')
-# test_logger.addHandler(tests_handler)
+test_logger = logging.getLogger('base.tests')
+test_logger.addHandler(tests_handler)
