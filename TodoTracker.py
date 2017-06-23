@@ -4,6 +4,7 @@ import time
 import io
 from log import logger
 import re
+import unittest
 
 from tkinter import *
 from tkinter import ttk
@@ -45,10 +46,6 @@ class Searcher:
                                             self.exclude, repr(regex),
                                             self.quiet))
 
-        self._search_path()
-        if not self.quiet:
-            print(self.log.getvalue())
-
     def _validate_file(self, file):
         for efile in self.exclude['files']:
             if file.count(efile):
@@ -68,7 +65,7 @@ class Searcher:
         else:  # no file type returned true
             return False
 
-    def _search_path(self):
+    def search_path(self):
         logger.debug('start search %s' % self.path)
         for path, dirs, files in os.walk(self.path, topdown=True):
             [dirs.remove(d) for d in list(dirs) if d in self.exclude['paths']]
@@ -80,6 +77,9 @@ class Searcher:
                     pass
                 else:
                     self._parse_file(path, file)
+
+        if not self.quiet:
+            print(self.log.getvalue())
 
     def _parse_file(self, path, file):
         has_pattern = False
@@ -117,6 +117,12 @@ class Searcher:
             outfile.write(self.log.getvalue())
 
         return self.log
+
+
+class SearcherTest(unittest.TestCase):
+    def test_init(self):
+        pass
+    pass
 
 
 class main(ttk.Frame):
@@ -212,13 +218,13 @@ class main(ttk.Frame):
 
         popup = Toplevel(root)
 
-        ttk.Label(popup,
-                  text=Searcher(self.path_text.get(),
-                                list(self.types_entry.get().split(',')),
-                                extensions, files, paths, regex, True
-                                ).write_file(os.path.join(
-                                             outpath, 'to.do')
-                                             ).getvalue(), justify=LEFT).pack()
+        searcher = Searcher(self.path_text.get(), list(
+            self.types_entry.get().split(',')), extensions, files, paths, regex,
+            True)
+        searcher.search_path()
+        searcher_log = searcher.write_file(os.path.join(outpath, 'to.do'))
+
+        ttk.Label(popup, text=searcher_log.getvalue(), justify=LEFT).pack()
 
 
 if __name__ == '__main__':
@@ -311,8 +317,10 @@ if __name__ == '__main__':
             else:
                 raise RuntimeError('Could not access the path created.')
 
-        Searcher(path, filetypes, exclude_extensions, exclude_files,
-                 exclude_path, parsed.regex, parsed.quiet)
+        searcher = Searcher(path, filetypes, exclude_extensions, exclude_files,
+                            exclude_path, parsed.regex, parsed.quiet)
+        searcher.search_path()
+        searcher_log = searcher.write_file(os.path.join(os.curdir, 'to.do'))
     else:
         root = Tk()
         main(root)
