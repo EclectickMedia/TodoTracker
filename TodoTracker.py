@@ -2,7 +2,7 @@ import argparse
 import os
 import time
 import io
-from log import logger
+from log import logger, searcher_handler, tests_handler
 import re
 import unittest
 
@@ -120,6 +120,20 @@ class Searcher:
         return self.log
 
 
+def logMe(func):
+    """ Enables tests logging for one function. Intended for use with
+    unittest.TestCase test_ cases. """
+    def wrapper(self):
+        logger.disabled = False
+        logger.removeHandler(searcher_handler)
+        logger.addHandler(tests_handler)
+        logger.info('%s' % func.__name__)
+        func(self)
+        logger.removeHandler(tests_handler)
+        logger.addHandler(searcher_handler)
+    return wrapper
+
+
 class SearcherTest(unittest.TestCase):
     """ Tests functionality of Searcher class.
 
@@ -127,10 +141,11 @@ class SearcherTest(unittest.TestCase):
     Creates the data file 'tests/out.do' (for `test_write_file`, cleans after
     use).
     """
-    # TODO test `search_path`
     # TODO test `search_path` skips directories properly
-    logger.disabled = True
-
+    def setUp(self):
+        logger.disabled = True
+    def tearDown(self):
+        logger.disabled = False
     def test_init(self):
         searcher = Searcher('logs', ['test'], ['test1', 'test2'],
                             files=['test'], epaths=['test1', 'test2', 'test3'],
@@ -219,17 +234,31 @@ class SearcherTest(unittest.TestCase):
         self.assertFalse(searcher.log.getvalue().count('1:// TODO'))
         self.assertTrue(searcher.log.getvalue().count('sample_data.test') < 1)
 
-    @unittest.skip('Under Construction: Need to find sample file')
-    def test__parse_file_catches_unicode_decode_error(self):
-        # TODO Test `_parse_file` Unicode error handling
-        pass
-
     def test__parse_file_raises_runtime_error(self):
         searcher = Searcher('tests', ['test'],
                             regex='^$')
         with self.assertRaises(RuntimeError):
             searcher._parse_file('a', 'b')
 
+    @logMe
+    def test_search_path_collects_data_when_present(self):
+        searcher = Searcher('tests', ['test'], quiet=True,
+                            regex="^# TODO.*$|^// TODO.*$")
+        searcher.search_path()
+        self.assertTrue(searcher.log.getvalue().count("0:# TODO"))
+        self.assertTrue(searcher.log.getvalue().count("1:// TODO"))
+        self.assertTrue(searcher.log.getvalue().count("sample_data.test") == 1)
+
+    @logMe
+    def test_search_path_no_data_present(self):
+        searcher = Searcher('tests', ['test'], quiet=True,
+                            regex="^$")
+        searcher.search_path()
+        self.assertFalse(searcher.log.getvalue().count("0:# TODO"))
+        self.assertFalse(searcher.log.getvalue().count("1:// TODO"))
+        self.assertFalse(searcher.log.getvalue().count("sample_data.test") == 1)
+
+    @logMe
     def test_write_file(self):
         searcher = Searcher('tests', ['test'],
                             regex="^.*#.*TODO.*$|^.*//.*TODO.*$", quiet=True)
