@@ -4,7 +4,8 @@ import logging.handlers as handlers
 import sys  # for grabbing the program directory
 import os  # for splitting sys.argv
 PROGRAM_PATH = os.path.split(sys.argv[0])[0]
-LOG_PATH = os.path.join(PROGRAM_PATH, 'logs', 'searcher.log')
+SEARCHER_LOG_PATH = os.path.join(PROGRAM_PATH, 'logs', 'searcher.log')
+TESTS_LOG_PATH = os.path.join(PROGRAM_PATH, 'logs', 'tests.log')
 
 # BEGIN Logger setup
 file_formatter = logging.Formatter(
@@ -26,13 +27,13 @@ stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(stream_formatter)
 stream_handler.setLevel(logging.INFO)
 
-searcher_handler = handlers.RotatingFileHandler(LOG_PATH,
+searcher_handler = handlers.RotatingFileHandler(SEARCHER_LOG_PATH,
                                                 maxBytes=500000, backupCount=5)
 searcher_handler.setFormatter(file_formatter)
 searcher_handler.setLevel(logging.DEBUG)
 
 
-tests_handler = handlers.RotatingFileHandler('logs/tests.log',
+tests_handler = handlers.RotatingFileHandler(TESTS_LOG_PATH,
                                              maxBytes=500000, backupCount=1)
 tests_handler.setFormatter(file_formatter)
 tests_handler.setLevel(logging.DEBUG)
