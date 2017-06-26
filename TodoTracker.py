@@ -144,8 +144,10 @@ class SearcherTest(unittest.TestCase):
     # TODO test `search_path` skips directories properly
     def setUp(self):
         logger.disabled = True
+
     def tearDown(self):
         logger.disabled = False
+
     def test_init(self):
         searcher = Searcher('logs', ['test'], ['test1', 'test2'],
                             files=['test'], epaths=['test1', 'test2', 'test3'],
