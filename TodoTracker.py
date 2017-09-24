@@ -67,11 +67,20 @@ class Searcher:
         else:  # no file type returned true
             return False
 
+    def __remove_dir(self, dirs):
+        dirs_ = dirs[:]
+        for d in dirs_:
+            if self.exclude['paths'].count(d):
+                dirs.remove(d)
+                logger.debug('remove directory %s from %s' % (d, dirs_))
+
+        logger.debug('final: %s', dirs)
+        return dirs
+
     def search_path(self):
         logger.debug('start search %s' % self.path)
         for path, dirs, files in os.walk(self.path, topdown=True):
-            [dirs.remove(d) for d in list(dirs) if
-             self.exclude['paths'].count(d)]  # Removes skip able directories
+            self.__remove_dir(dirs)
             logger.debug('parse files in %s' % path)
             for file in files:
                 logger.debug('validate and parse %s' %
