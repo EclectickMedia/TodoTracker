@@ -135,6 +135,11 @@ On MacOS, using [`py2app`][1] (for installation and usage refer to [`py2app`][1]
 python3 setup.py py2app
 ```
 
+On Linux and Windows, using ['pyinstaller`][2] (for installation and usage refer to [`pyinstaller`][2] docs):
+```
+pyinstaller TodoTracker.py
+```
+
 # Issue reporting/contribution:
 
 To report an issue, please visit [our issue tracker][issues] and follow these steps.
