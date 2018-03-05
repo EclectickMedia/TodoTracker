@@ -7,13 +7,14 @@ import io
 from log import logger, searcher_handler, tests_handler
 import re
 import unittest
+import sys
 
-from tkinter import *
+from tkinter import StringVar, Entry, Toplevel, LEFT, Tk
 from tkinter import ttk
 from tkinter import filedialog
 
-version = 'V2.01.02'
-versiondate = 'Wed Jun 21 02:19:32 2017'
+version = 'V2.01.02.01'
+versiondate = 'Mon Mar  5 12:12:39 2018'
 buildname = 'TodoTracker'
 versionstr = '%s %s (c) Eclectick Media Solutions, circa %s' % (buildname,
                                                                 version,
