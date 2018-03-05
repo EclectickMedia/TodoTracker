@@ -25,8 +25,34 @@ versionstr = '%s %s (c) Eclectick Media Solutions, circa %s' % (buildname,
 #                                                                              #
 #                 Implement file heirarchy searching logic.                    #
 class Searcher:
+    """ Implements file and line searching functionality.
+
+        >>> from TodoTracker import Searcher
+        >>> from os import path as paths, getcwd
+        >>> searcher = Searcher(getcwd(), ['py'])  # set quiet=False for verbose
+        >>> searcher.search_path()  # if verbose, output results
+        >>> searcher_log = searcher.write_file(os.path.join(getcwd(), 'to.do'))
+        >>> searcher_log.getvalue()  # outputs contents
+    """
     def __init__(self, path, types, extensions=list(), files=list(),
                  epaths=list(), regex=r'(?!).*# TODO.*', quiet=False):
+        """ Initializes all data, writes initial line of output file.
+
+        `path` - The path to search from.
+        `types` - A list of file extensions that are valid search targets.
+        `extensions` - An optional list of file extensions to ignore.
+        `files` - An optional list of file names to ignore.
+        `epaths` An optional list of paths to ignore.
+        `regex` - User supplied regex pattern to match against. (Passed to `re`)
+
+        `initializes`:
+            `self.exclude` - A `dict` with keys:
+                'extensions' - The list supplied by `extensions`
+                'files' - The list supplied by `files`
+                'paths' - The list supplied by `epaths`
+            `self.regex` - The result of `re.compile(regex)`
+            `self.log` - An `io.StringIO` object used to store results.
+        """
         if not os.access(path, os.F_OK):
             raise OSError('Could not access search path')
 
@@ -53,6 +79,9 @@ class Searcher:
                                             self.quiet))
 
     def _validate_file(self, file):
+        """ Compares file against `self.exclude`, and returns False if any match
+        is made. Returns True if `file` is found in `self.types`.
+        """
         for efile in self.exclude['files']:
             if file.count(efile):
                 logger.debug('%s in %s, False' % (efile, file))
@@ -72,6 +101,9 @@ class Searcher:
             return False
 
     def __remove_dir(self, dirs):
+        """ Remove directories from a list of directories if they match against
+        `self.exclude['paths']`. Returns modified list of directories.
+        """
         dirs_ = dirs[:]
         for d in dirs_:
             if self.exclude['paths'].count(d):
@@ -82,6 +114,11 @@ class Searcher:
         return dirs
 
     def search_path(self):
+        """ Searches for matching files from `self.path` and appends matching lines
+        to `self.log`.
+
+        If not `self.quiet`, outputs `self.log` on completion.
+        """
         logger.debug('start search %s' % self.path)
         for path, dirs, files in os.walk(self.path, topdown=True):
             self.__remove_dir(dirs)
@@ -98,6 +135,9 @@ class Searcher:
             print(self.log.getvalue())
 
     def _parse_file(self, path, file):
+        """ Parse file located at `path` of `file`, appending matching lines to
+        `self.log`. Returns True if file had any matching lines.
+        """
         has_pattern = False
         temp_log = io.StringIO()
         if os.access(os.path.join(path, file), os.F_OK):
@@ -129,15 +169,17 @@ class Searcher:
             raise RuntimeError('Could not open %s!' % os.path.join(path, file))
 
     def write_file(self, outpath):
+        """ Writes `self.log` to `outpath`, if `outpath` is valid path.
+
+        `returns` - self.log
+        """
         with open(outpath, 'w+') as outfile:
             outfile.write(self.log.getvalue())
 
         return self.log
 
 
-################################################################################
-#                                     UI                                       #
-#                                                                              #
+# UI
 class main(ttk.Frame):
     def __init__(self, root):
         super(main, self).__init__(root)
