@@ -134,3 +134,19 @@ On MacOS, using [`py2app`](1) (for installation and usage refer to [`py2app`](1)
 ```bash
 python3 setup.py py2app
 ```
+
+# Issue reporting/contribution:
+
+To report an issue, please visit [our issue tracker][issues] and follow these steps.
+
+1. Create a new Issue, describing the bug and attaching any relevant data.
+
+2. Run `python3 run_tests.py` from your command line and append it to the bottom of your Issue.
+
+To contribute make a fork, implement your changes, and submit a pull request.
+
+
+[pingstats]:https://github.com/EclectickMedia/PingStats
+[issues]:https://github.com/EclectickMedia/TodoTracker/issues
+[0]:https://github.com/EclectickMedia/TodoTracker/releases
+[1]:https://py2app.readthedocs.io/en/latest/
