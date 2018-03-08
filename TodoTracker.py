@@ -477,7 +477,7 @@ class Searcher_QUEUE_Test(unittest.TestCase):
     def tearDown(self):
         logger.disabled = False
 
-    def test(self):
+    def test_searcher_funcs(self):
         q = Queue()
 
         searcher = Searcher('tests', ['test'], q=q, quiet=True, regex='TODO')
@@ -490,6 +490,56 @@ class Searcher_QUEUE_Test(unittest.TestCase):
         self.assertTrue(searcher.log.count('MASTER'))
         self.assertTrue(searcher.log.count('sample'))
         self.assertTrue(searcher.log.count('TODO'))
+
+        p.terminate()
+
+    def test_ui_funcs(self):
+        root = Tk()
+        st = ScrolledText(root)
+        st.pack()
+
+        q = Queue()
+
+        searcher = Searcher('tests', ['test'], q=q, quiet=True, regex='TODO')
+        searcher.search_path()
+
+        p = Process(target=searcher.search_path)
+        p.start()
+
+        st.insert(0.0, '\nDone!')
+
+        st.insert(st.search('Done', 0.0), searcher.log)
+        self.assertTrue(st.search('MASTER', 0.0))
+
+        st.insert(st.search('Done', 0.0), searcher.log)
+        self.assertTrue(st.search('sample', 0.0))
+
+        st.insert(st.search('Done', 0.0), searcher.log)
+        self.assertTrue(st.search('TODO', 0.0))
+
+        # root.mainloop()  # DEBUG
+
+        # CLEANUP
+        p.terminate()
+        root.destroy()
+
+    def test_progromatic_q_access(self):
+        message = ''
+        q = Queue()
+
+        searcher = Searcher('tests', ['test'], q=q, quiet=True, regex='TODO')
+        searcher.search_path()
+
+        p = Process(target=searcher.search_path)
+        p.start()
+
+        with self.assertRaises(Empty):
+            while True:
+                message += searcher.log
+
+        self.assertTrue(message.count('MASTER'))
+        self.assertTrue(message.count('sample'))
+        self.assertTrue(message.count('TODO'))
 
         p.terminate()
 
