@@ -308,7 +308,7 @@ class main(ttk.Frame):
 
         self.spawn(extensions, files, paths, regex)
 
-    def spawn(self, extensions, files, paths, regex):
+    def spawn(self, outpath, extensions, files, paths, regex):
         """ Spawns the results popup, schedules `self.get_text`.
         """
 
@@ -333,9 +333,9 @@ class main(ttk.Frame):
         p = Process(target=searcher.search_path)
         p.start()
 
-        self.after(500, self.get_text, searcher, st, q, p)
+        self.after(500, self.get_text, outpath, searcher, st, q, p)
 
-    def get_text(self, searcher, st, q, p):
+    def get_text(self, outpath, searcher, st, q, p):
         searching_loc = st.search('Searching', 0.0)
         st.delete(searching_loc, END)
 
@@ -360,7 +360,7 @@ class main(ttk.Frame):
             st.insert(END, '\nDone!')
             p.join()
             searcher.write_file(
-                os.path.join(output_path, 'to.do'), self.log
+                os.path.join(outpath, 'to.do'), self.log
             )
             return
 
