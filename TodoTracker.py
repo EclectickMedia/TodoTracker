@@ -218,7 +218,7 @@ class main(ttk.Frame):
         self.file_types = []
         self.exclude = {}
         self._pretty_i = 0
-        self.log = ''
+        self.log
 
         # PATH AND TYPES
         path_and_types_frame = ttk.Frame(self)
@@ -355,7 +355,7 @@ class main(ttk.Frame):
                 self._pretty_i += 1
 
             st.insert(END, searching_text)
-            self.after(500, self.get_text, st, q, p)
+            self.after(500, self.get_text, searcher, st, q, p)
         else:
             st.insert(END, '\nDone!')
             p.join()
