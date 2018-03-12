@@ -196,7 +196,7 @@ class Searcher:
             logger.debug('Could not open %s' % os.path.join(path, file))
             raise RuntimeError('Could not open %s!' % os.path.join(path, file))
 
-    def write_file(self, outpath):
+    def write_file(self, outpath, log):
         """ Writes `self.log` to `outpath`, if `outpath` is valid path.
 
         `returns` - self.log
@@ -204,7 +204,7 @@ class Searcher:
         with open(outpath, 'w+') as outfile:
             outfile.write(self.log)
 
-        return self.log
+        return log
 
 
 ################################################################################
@@ -218,6 +218,7 @@ class main(ttk.Frame):
         self.file_types = []
         self.exclude = {}
         self._pretty_i = 0
+        self.log = ''
 
         # PATH AND TYPES
         path_and_types_frame = ttk.Frame(self)
@@ -332,14 +333,16 @@ class main(ttk.Frame):
         p = Process(target=searcher.search_path)
         p.start()
 
-        self.after(500, self.get_text, st, q, p)
+        self.after(500, self.get_text, searcher, st, q, p)
 
-    def get_text(self, st, q, p):
+    def get_text(self, searcher, st, q, p):
         searching_loc = st.search('Searching', 0.0)
         st.delete(searching_loc, END)
 
         while not q.empty():
-            st.insert(END, q.get(False))
+            m = q.get(False)
+            self.log += m
+            st.insert(END, m)
 
         if p.is_alive():
             searching_text = '\nSearching'
@@ -356,6 +359,9 @@ class main(ttk.Frame):
         else:
             st.insert(END, '\nDone!')
             p.join()
+            searcher.write_file(
+                os.path.join(output_path, 'to.do'), self.log
+            )
             return
 
 
@@ -509,7 +515,7 @@ class Searcher_LOG_IO_Test(unittest.TestCase):
         searcher = Searcher('tests', ['test'],
                             regex="^.*#.*TODO.*$|^.*//.*TODO.*$", quiet=True)
         searcher.search_path()
-        searcher_log = searcher.write_file('tests/out.do')
+        searcher_log = searcher.write_file('tests/out.do', searcher.log)
         self.assertEqual(searcher.log, searcher_log)
 
         with open('tests/out.do') as out_file:
@@ -709,7 +715,9 @@ if __name__ == '__main__':
                             quiet=parsed.quiet)
 
         searcher.search_path()
-        searcher_log = searcher.write_file(os.path.join(output_path, 'to.do'))
+        searcher_log = searcher.write_file(
+            os.path.join(output_path, 'to.do'), searcher.log
+        )
 
     ############################################################################
     #                                   UI                                     #
