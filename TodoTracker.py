@@ -13,6 +13,7 @@ from queue import Empty
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
+from tkinter import END
 from tkinter.scrolledtext import ScrolledText
 
 version = 'V2.01.02.01'
@@ -216,6 +217,7 @@ class main(ttk.Frame):
         self.path = None
         self.file_types = []
         self.exclude = {}
+        self._pretty_i = 0
 
         # PATH AND TYPES
         path_and_types_frame = ttk.Frame(self)
@@ -272,11 +274,14 @@ class main(ttk.Frame):
 
         ttk.Button(self, text='Specify output folder and run search...',
                    command=lambda:
-                   self._run_search(filedialog.askdirectory())
+                   self.parse_args(filedialog.askdirectory())
                    ).pack(pady=(20, 10))
         self.pack()
 
-    def _run_search(self, outpath):
+    def parse_args(self, outpath):
+        """ Ensures all data from the user is parsed properly, call `self.spawn`
+        """
+
         if self.types_entry.get() == '':
             raise RuntimeError('Must specify at least one file type')
 
@@ -300,15 +305,58 @@ class main(ttk.Frame):
         else:
             regex = self.regex_input.get()
 
-        popup = Toplevel(root)
+        self.spawn(extensions, files, paths, regex)
 
-        searcher = Searcher(self.path_text.get(), list(
-            self.types_entry.get().split(',')), extensions, files, paths, regex,
-            True)
-        searcher.search_path()
-        searcher_log = searcher.write_file(os.path.join(outpath, 'to.do'))
+    def spawn(self, extensions, files, paths, regex):
+        """ Spawns the results popup, schedules `self.get_text`.
+        """
 
-        ttk.Label(popup, text=searcher_log.getvalue(), justify=LEFT).pack()
+        popup = Toplevel(self.root)
+        st = ScrolledText()
+        st = ScrolledText(popup)
+        st.pack()
+        st.insert(0.0, 'Searching...')
+
+        q = Queue()
+
+        searcher = Searcher(
+            path=self.path_text.get(),
+            types=list(self.types_entry.get().split(',')),
+            extensions=extensions,
+            files=files,
+            epaths=paths,
+            q=q,
+            regex=regex,
+            quiet=True)
+
+        p = Process(target=searcher.search_path)
+        p.start()
+
+        self.after(500, self.get_text, st, q, p)
+
+    def get_text(self, st, q, p):
+        searching_loc = st.search('Searching', 0.0)
+        st.delete(searching_loc, END)
+
+        while not q.empty():
+            st.insert(END, q.get(False))
+
+        if p.is_alive():
+            searching_text = '\nSearching'
+            for i in range(self._pretty_i):
+                searching_text += '.'
+
+            if self._pretty_i == 3:
+                self._pretty_i = 0
+            else:
+                self._pretty_i += 1
+
+            st.insert(END, searching_text)
+            self.after(500, self.get_text, st, q, p)
+        else:
+            st.insert(END, '\nDone!')
+            p.join()
+            return
 
 
 ################################################################################
