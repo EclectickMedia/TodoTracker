@@ -311,7 +311,7 @@ class main(ttk.Frame):
         else:
             regex = self.regex_input.get()
 
-        self.spawn(outpath, extensions, files, paths, regex)
+        return outpath, extensions, files, paths, regex
 
     def _popup_kill(self):
         """ Ensures that all processes are properly joined, cancels `self._cb_id`.
