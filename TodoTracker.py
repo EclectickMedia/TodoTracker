@@ -221,7 +221,7 @@ class main(ttk.Frame):
         # Multiprocessing data
         self.log = ''  # compile all data from queue for `Searcher.write_file`
         self._cb_id = None  # ID of callback to `self.get_text`
-        self._pretty_i = 0  # Track number of '.' for `self.get_text`
+        self._pretty_i = 3  # Track number of '.' for `self.get_text`
         self._popup = None  # The pop up widget instance
         self._p = None  # Placeholder for the `multiprocessing.process` instance.
 
@@ -290,6 +290,8 @@ class main(ttk.Frame):
 
         if self.types_entry.get() == '':
             raise RuntimeError('Must specify at least one file type')
+        else:
+            types = self.types_entry.get().split(',')
 
         if self.extensions_input.get() == '':
             extensions = []
@@ -311,7 +313,7 @@ class main(ttk.Frame):
         else:
             regex = self.regex_input.get()
 
-        return outpath, extensions, files, paths, regex
+        return outpath, types, extensions, files, paths, regex
 
     def _popup_kill(self):
         """ Ensures that all processes are properly joined, cancels `self._cb_id`.
@@ -320,7 +322,7 @@ class main(ttk.Frame):
         self._p.join()
         self.after_cancel(self._cb_id)
 
-    def spawn(self, outpath, extensions, files, paths, regex):
+    def spawn(self, outpath, types, extensions, files, paths, regex):
         """ Spawns the results popup, schedules `self.get_text`.
         """
 
@@ -334,7 +336,7 @@ class main(ttk.Frame):
 
         searcher = Searcher(
             path=self.path_text.get(),
-            types=list(self.types_entry.get().split(',')),
+            types=types,
             extensions=extensions,
             files=files,
             epaths=paths,
@@ -348,6 +350,7 @@ class main(ttk.Frame):
         self._cb_id = self.after(
             500, self.get_text, outpath, searcher, st, q, self._p
         )
+        return outpath, searcher, st, q, self._p
 
     def get_text(self, outpath, searcher, st, q, p):
         searching_loc = st.search('Searching', 0.0)
