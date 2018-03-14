@@ -313,9 +313,8 @@ class main(ttk.Frame):
         """
 
         popup = Toplevel(self.root)
-        st = ScrolledText()
         st = ScrolledText(popup)
-        st.pack()
+        st.pack(fill='both', expand='yes')
         st.insert(0.0, 'Searching...')
 
         q = Queue()
@@ -355,7 +354,7 @@ class main(ttk.Frame):
                 self._pretty_i += 1
 
             st.insert(END, searching_text)
-            self.after(500, self.get_text, searcher, st, q, p)
+            self.after(500, self.get_text, outpath, searcher, st, q, p)
         else:
             st.insert(END, '\nDone!')
             p.join()
