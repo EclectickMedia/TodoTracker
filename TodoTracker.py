@@ -202,7 +202,7 @@ class Searcher:
         `returns` - self.log
         """
         with open(outpath, 'w+') as outfile:
-            outfile.write(self.log)
+            outfile.write(log)
 
         return log
 
@@ -218,7 +218,7 @@ class main(ttk.Frame):
         self.file_types = []
         self.exclude = {}
         self._pretty_i = 0
-        self.log
+        self.log = ''
 
         # PATH AND TYPES
         path_and_types_frame = ttk.Frame(self)
@@ -306,7 +306,7 @@ class main(ttk.Frame):
         else:
             regex = self.regex_input.get()
 
-        self.spawn(extensions, files, paths, regex)
+        self.spawn(outpath, extensions, files, paths, regex)
 
     def spawn(self, outpath, extensions, files, paths, regex):
         """ Spawns the results popup, schedules `self.get_text`.
