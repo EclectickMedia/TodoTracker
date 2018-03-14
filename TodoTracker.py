@@ -811,6 +811,11 @@ class main_UI_Test(unittest.TestCase):
 
         _p.join()
         self.assertFalse(_p.is_alive())
+        self.assertTrue(
+            os.access(os.path.join(outpath, 'to.do'), os.F_OK)
+        )
+
+        os.remove(os.path.join(os.getcwd(), 'tests', 'to.do'))
 
 
 if __name__ == '__main__':
