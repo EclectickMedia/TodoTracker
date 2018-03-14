@@ -280,7 +280,7 @@ class main(ttk.Frame):
 
         ttk.Button(self, text='Specify output folder and run search...',
                    command=lambda:
-                   self.parse_args(filedialog.askdirectory())
+                   self.spawn(*self.parse_args(filedialog.askdirectory()))
                    ).pack(pady=(20, 10))
         self.pack()
 
