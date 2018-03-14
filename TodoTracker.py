@@ -221,7 +221,7 @@ class main(ttk.Frame):
         # Multiprocessing data
         self.log = ''  # compile all data from queue for `Searcher.write_file`
         self._cb_id = None  # ID of callback to `self.get_text`
-        self._pretty_i = 0  # Track number of '.' for `self.get_text`
+        self._pretty_i = 3  # Track number of '.' for `self.get_text`
         self._popup = None  # The pop up widget instance
         self._p = None  # Placeholder for the `multiprocessing.process` instance.
 
@@ -280,9 +280,9 @@ class main(ttk.Frame):
 
         ttk.Button(self, text='Specify output folder and run search...',
                    command=lambda:
-                   self.parse_args(filedialog.askdirectory())
+                   self.spawn(*self.parse_args(filedialog.askdirectory()))
                    ).pack(pady=(20, 10))
-        self.pack()
+        self.pack(fill='both')
 
     def parse_args(self, outpath):
         """ Ensures all data from the user is parsed properly, call `self.spawn`
@@ -290,6 +290,8 @@ class main(ttk.Frame):
 
         if self.types_entry.get() == '':
             raise RuntimeError('Must specify at least one file type')
+        else:
+            types = self.types_entry.get().split(',')
 
         if self.extensions_input.get() == '':
             extensions = []
@@ -311,7 +313,7 @@ class main(ttk.Frame):
         else:
             regex = self.regex_input.get()
 
-        self.spawn(outpath, extensions, files, paths, regex)
+        return outpath, types, extensions, files, paths, regex
 
     def _popup_kill(self):
         """ Ensures that all processes are properly joined, cancels `self._cb_id`.
@@ -320,7 +322,7 @@ class main(ttk.Frame):
         self._p.join()
         self.after_cancel(self._cb_id)
 
-    def spawn(self, outpath, extensions, files, paths, regex):
+    def spawn(self, outpath, types, extensions, files, paths, regex):
         """ Spawns the results popup, schedules `self.get_text`.
         """
 
@@ -334,7 +336,7 @@ class main(ttk.Frame):
 
         searcher = Searcher(
             path=self.path_text.get(),
-            types=list(self.types_entry.get().split(',')),
+            types=types,
             extensions=extensions,
             files=files,
             epaths=paths,
@@ -348,6 +350,7 @@ class main(ttk.Frame):
         self._cb_id = self.after(
             500, self.get_text, outpath, searcher, st, q, self._p
         )
+        return outpath, searcher, st, q, self._p
 
     def get_text(self, outpath, searcher, st, q, p):
         searching_loc = st.search('Searching', 0.0)
@@ -392,7 +395,7 @@ def logMe(func):
         logger.disabled = False
         logger.removeHandler(searcher_handler)
         logger.addHandler(tests_handler)
-        logger.info('%s' % func.__name__)
+        logger.debug('%s' % func.__name__)
         func(self)
         logger.removeHandler(tests_handler)
         logger.addHandler(searcher_handler)
@@ -617,7 +620,203 @@ class Searcher_QUEUE_Test(unittest.TestCase):
         p.join()
 
 
-# TODO Make tests for searcher with queue.Queue
+class main_UI_Test(unittest.TestCase):
+    def setUp(self):
+        logger.disabled = True
+        root = Tk()
+        self.m = main(root)
+
+    def tearDown(self):
+        logger.disabled = False
+        self.m.destroy()
+
+    def get_searcher(self):
+        """ Generates everything needed for searcher.
+
+        `returns`:
+            `multiprocessing.Queue()`
+            `TodoTracker.Searcher(*args, **kwargs)`
+            `multiprocessing.Process()`
+        """
+        q = Queue()
+
+        searcher = Searcher('tests', ['test'], q=q, quiet=True, regex='TODO')
+
+        p = Process(target=searcher.search_path)
+
+        return q, searcher, p
+
+    def test_searcher_to_q_to_scrolledtext(self):
+        root = Tk()
+        st = ScrolledText(root)
+        st.pack()
+        q, searcher, p = self.get_searcher()
+        p.start()
+
+        st.insert(0.0, '\nDone!')
+
+        st.insert(st.search('Done', 0.0), searcher.log)
+        self.assertTrue(st.search('MASTER', 0.0))
+
+        st.insert(st.search('Done', 0.0), searcher.log)
+        self.assertTrue(st.search('sample', 0.0))
+
+        st.insert(st.search('Done', 0.0), searcher.log)
+        self.assertTrue(st.search('TODO', 0.0))
+
+        # root.mainloop()  # DEBUG
+
+        # CLEANUP
+        p.join()
+        root.destroy()
+
+    def test_init_multiprocessing_data(self):
+        # Multiprocessing data init test
+        self.assertIs(type(self.m.log), str)
+        self.assertIs(type(self.m._pretty_i), int)
+        self.assertIs(self.m._cb_id, None)
+        self.assertIs(self.m._popup, None)
+        self.assertIs(self.m._p, None)
+
+    def test_init_base_data(self):
+        self.assertIs(type(self.m.root), Tk)
+        self.assertIs(self.m.path, None)
+        self.assertIs(type(self.m.file_types), list)
+        self.assertIs(type(self.m.exclude), dict)
+
+    def test_path_widget_init(self):
+        self.assertIsInstance(self.m.path_text, StringVar)
+        self.assertEqual(self.m.path_text.get(), os.getcwd())
+        self.assertIsInstance(self.m.path_label, ttk.Label)
+        self.assertGreaterEqual(len(self.m.path_label.grid_info()), 1)
+
+        self.m.path_text.set('test')
+        self.assertEqual(self.m.path_text.get(), 'test')
+
+    def test_types_widget_init(self):
+        # test setting/getting when testing parse_args
+        self.assertIsInstance(self.m.types_entry, Entry)
+        self.assertGreaterEqual(len(self.m.types_entry.grid_info()), 1)
+
+    def test_extensions_widget_init(self):
+        # test setting/getting when testing parse_args
+        self.assertIsInstance(self.m.extensions_input, Entry)
+        self.assertGreaterEqual(len(self.m.extensions_input.grid_info()), 1)
+
+    def test_files_widget_init(self):
+        # test setting/getting when testing parse_args
+        self.assertIsInstance(self.m.files_input, Entry)
+        self.assertGreaterEqual(len(self.m.files_input.grid_info()), 1)
+
+    def test_epaths_widget_init(self):
+        # test setting/getting when testing parse_args
+        self.assertIsInstance(self.m.paths_input, Entry)
+        self.assertGreaterEqual(len(self.m.paths_input.grid_info()), 1)
+
+    def test_regex_widget_init(self):
+        # test setting/getting when testing parse_args
+        self.assertIsInstance(self.m.regex_input, Entry)
+        self.assertGreaterEqual(len(self.m.regex_input.grid_info()), 1)
+
+    def test_init(self):
+        self.assertEqual(self.m.pack_info()['fill'], 'both')
+
+    def test_parse_types_thorws_runtime(self):
+        with self.assertRaises(RuntimeError):
+            outpath, types, extensions, files, paths, regex = self.m.parse_args('')
+
+    def test_parse_types(self):
+        self.m.types_entry.insert(0, 'test,test2')
+        outpath, types, extensions, files, paths, regex = self.m.parse_args('')
+
+        self.assertIsInstance(types, list)
+        self.assertGreaterEqual(len(types), 1)
+
+    def test_parse_extensions(self):
+        self.m.types_entry.insert(0, 'test,test2')
+        outpath, types, extensions, files, paths, regex = self.m.parse_args('')
+        self.assertIsInstance(extensions, list)
+        self.assertEqual(len(extensions), 0)
+
+        self.m.extensions_input.insert(0, 'test,test2')
+        outpath, types, extensions, files, paths, regex = self.m.parse_args('')
+        self.assertEqual(len(extensions), 2)
+
+    def test_parse_files(self):
+        self.m.types_entry.insert(0, 'test,test2')
+        outpath, types, extensions, files, paths, regex = self.m.parse_args('')
+        self.assertIsInstance(files, list)
+        self.assertEqual(len(files), 0)
+
+        self.m.files_input.insert(0, 'test,test2')
+        outpath, types, extensions, files, paths, regex = self.m.parse_args('')
+        self.assertEqual(len(files), 2)
+
+    def test_parse_paths(self):
+        self.m.types_entry.insert(0, 'test,test2')
+        outpath, types, extensions, files, paths, regex = self.m.parse_args('')
+        self.assertIsInstance(paths, list)
+        self.assertEqual(len(paths), 0)
+
+        self.m.paths_input.insert(0, 'test,test2')
+        outpath, types, extensions, files, paths, regex = self.m.parse_args('')
+        self.assertEqual(len(paths), 2)
+
+    def test_parse_regex(self):
+        self.m.types_entry.insert(0, 'test,test2')
+        outpath, types, extensions, files, paths, regex = self.m.parse_args('')
+        self.assertIsInstance(regex, str)
+        self.assertEqual(regex, "(?i).*#.TODO.*")
+
+        self.m.regex_input.insert(0, 'test,test2')
+        outpath, types, extensions, files, paths, regex = self.m.parse_args('')
+        self.assertEqual(regex, 'test,test2')
+
+    def test_spawn(self):
+        self.m.types_entry.insert(0, 'test')
+        outpath, searcher, st, q, _p = self.m.spawn(*self.m.parse_args(
+            os.path.join(os.getcwd(), 'tests'))
+        )
+        self.assertTrue(_p.is_alive())
+
+        self.assertGreaterEqual(len(st.pack_info()), 1)
+        self.assertTrue(st.search('Searching', '0.end'))
+        self.assertTrue(
+            st.get(st.search('Searching', '0.end'), 'end').count('Searching')
+        )
+        searching_text = st.get(st.search('Searching', '0.end'), 'end')
+        dots = searching_text[searching_text.index('.'):]
+        self.assertEqual(dots.count('.'), 3)
+
+        time.sleep(1)  # ensure threads are caught up
+        while _p.is_alive():
+            self.m.get_text(outpath, searcher, st, q, _p)
+            self.assertTrue(st.search('Searching', '0.end'))
+            self.assertTrue(
+                st.get(st.search('Searching', '0.end'), 'end').count('Searching')
+            )
+            if self.m._pretty_i > 0:
+                searching_text = st.get(st.search('Searching', '0.end'), 'end')
+                self.assertEqual(searching_text.count('.'), self.m._pretty_i - 1)
+            else:
+                searching_text = st.get(st.search('Searching', '0.end'), 'end')
+                self.assertEqual(searching_text.count('.'), 3)
+        else:
+            self.m.get_text(outpath, searcher, st, q, _p)
+            self.assertTrue(st.search('Done', '0.end'))
+
+            self.assertTrue(st.search('MASTER', '0.end'))
+            self.assertTrue(st.search('sample', '0.end'))
+            self.assertTrue(st.search('Should be', '0.end'))
+
+        _p.join()
+        self.assertFalse(_p.is_alive())
+        self.assertTrue(
+            os.access(os.path.join(outpath, 'to.do'), os.F_OK)
+        )
+
+        os.remove(os.path.join(os.getcwd(), 'tests', 'to.do'))
+
 
 if __name__ == '__main__':
     freeze_support()

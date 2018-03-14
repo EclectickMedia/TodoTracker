@@ -25,7 +25,7 @@ stream_formatter = logging.Formatter(
 )
 stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(stream_formatter)
-stream_handler.setLevel(logging.INFO)
+stream_handler.setLevel(logging.WARNING)
 
 searcher_handler = handlers.RotatingFileHandler(SEARCHER_LOG_PATH,
                                                 maxBytes=500000, backupCount=5)
