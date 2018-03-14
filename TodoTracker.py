@@ -217,8 +217,13 @@ class main(ttk.Frame):
         self.path = None
         self.file_types = []
         self.exclude = {}
-        self._pretty_i = 0
-        self.log = ''
+
+        # Multiprocessing data
+        self.log = ''  # compile all data from queue for `Searcher.write_file`
+        self._cb_id = None  # ID of callback to `self.get_text`
+        self._pretty_i = 0  # Track number of '.' for `self.get_text`
+        self._popup = None  # The pop up widget instance
+        self._p = None  # Placeholder for the `multiprocessing.process` instance.
 
         # PATH AND TYPES
         path_and_types_frame = ttk.Frame(self)
@@ -308,12 +313,20 @@ class main(ttk.Frame):
 
         self.spawn(outpath, extensions, files, paths, regex)
 
+    def _popup_kill(self):
+        """ Ensures that all processes are properly joined, cancels `self._cb_id`.
+        """
+        self._popup.destroy()
+        self._p.join()
+        self.after_cancel(self._cb_id)
+
     def spawn(self, outpath, extensions, files, paths, regex):
         """ Spawns the results popup, schedules `self.get_text`.
         """
 
-        popup = Toplevel(self.root)
-        st = ScrolledText(popup)
+        self._popup = Toplevel(self.root)
+        self._popup.protocol('WM_DELETE_WINDOW', self._popup_kill)
+        st = ScrolledText(self._popup)
         st.pack(fill='both', expand='yes')
         st.insert(0.0, 'Searching...')
 
@@ -329,10 +342,12 @@ class main(ttk.Frame):
             regex=regex,
             quiet=True)
 
-        p = Process(target=searcher.search_path)
-        p.start()
+        self._p = Process(target=searcher.search_path)
+        self._p.start()
 
-        self.after(500, self.get_text, outpath, searcher, st, q, p)
+        self._cb_id = self.after(
+            500, self.get_text, outpath, searcher, st, q, self._p
+        )
 
     def get_text(self, outpath, searcher, st, q, p):
         searching_loc = st.search('Searching', 0.0)
@@ -354,7 +369,9 @@ class main(ttk.Frame):
                 self._pretty_i += 1
 
             st.insert(END, searching_text)
-            self.after(500, self.get_text, outpath, searcher, st, q, p)
+            self._cb_id = self.after(
+                500, self.get_text, outpath, searcher, st, q, p
+            )
         else:
             st.insert(END, '\nDone!')
             p.join()
