@@ -282,7 +282,7 @@ class main(ttk.Frame):
                    command=lambda:
                    self.spawn(*self.parse_args(filedialog.askdirectory()))
                    ).pack(pady=(20, 10))
-        self.pack()
+        self.pack(fill='both')
 
     def parse_args(self, outpath):
         """ Ensures all data from the user is parsed properly, call `self.spawn`
