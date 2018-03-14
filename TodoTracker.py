@@ -392,7 +392,7 @@ def logMe(func):
         logger.disabled = False
         logger.removeHandler(searcher_handler)
         logger.addHandler(tests_handler)
-        logger.info('%s' % func.__name__)
+        logger.debug('%s' % func.__name__)
         func(self)
         logger.removeHandler(tests_handler)
         logger.addHandler(searcher_handler)
